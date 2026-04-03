@@ -21,12 +21,14 @@ export default async function AdminUsersPage() {
     SUPER_ADMIN: 'Super Admin',
     BLOG_EDITOR: 'Blog Editor',
     PLATFORM_EDITOR: 'Platform Editor',
+    CONTRIBUTOR: 'Contributor',
   }
 
   const roleBadge: Record<string, string> = {
     SUPER_ADMIN: 'bg-yellow-400/20 text-yellow-400',
     BLOG_EDITOR: 'bg-blue-400/20 text-blue-400',
     PLATFORM_EDITOR: 'bg-purple-400/20 text-purple-400',
+    CONTRIBUTOR: 'bg-green-400/20 text-green-400',
   }
 
   return (
@@ -103,6 +105,10 @@ export default async function AdminUsersPage() {
             <div className="bg-purple-400/5 border border-purple-400/20 rounded-lg p-3">
               <span className="text-purple-400 font-bold block mb-1">Platform Editor</span>
               Can create and manage betting platforms only
+            </div>
+            <div className="bg-green-400/5 border border-green-400/20 rounded-lg p-3">
+              <span className="text-green-400 font-bold block mb-1">Contributor</span>
+              Write/edit blogs + add affiliate widgets to own blogs only
             </div>
           </div>
         </div>

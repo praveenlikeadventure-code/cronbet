@@ -3,12 +3,13 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import AdminNav from '../../AdminNav'
-import { Sparkles, ChevronDown, RefreshCw, Send, BookOpen, Clock } from 'lucide-react'
+import { Sparkles, ChevronDown, RefreshCw, Send, BookOpen, Clock, Megaphone, PlusCircle, CheckCircle } from 'lucide-react'
 
 interface Platform {
   id: string
   name: string
   slug: string
+  bonusText?: string | null
 }
 
 interface GeneratedBlog {
@@ -79,6 +80,9 @@ export default function GenerateBlogPage() {
   const [error, setError] = useState('')
   const [generated, setGenerated] = useState<GeneratedBlog | null>(null)
   const [publishing, setPublishing] = useState(false)
+  const [suggestedPlatforms, setSuggestedPlatforms] = useState<Platform[]>([])
+  const [addedWidgets, setAddedWidgets] = useState<Set<string>>(new Set())
+  const [addingWidget, setAddingWidget] = useState<string | null>(null)
 
   useEffect(() => {
     fetch('/api/platforms').then(r => r.json()).then(setPlatforms).catch(() => {})
@@ -107,6 +111,14 @@ export default function GenerateBlogPage() {
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Generation failed')
       setGenerated(data)
+
+      // Smart auto-placement: detect which platforms are mentioned in the content
+      const contentLower = (data.title + ' ' + data.content).toLowerCase()
+      const mentioned = platforms.filter((p) =>
+        contentLower.includes(p.name.toLowerCase())
+      )
+      setSuggestedPlatforms(mentioned)
+      setAddedWidgets(new Set())
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong')
     } finally {
@@ -141,6 +153,29 @@ export default function GenerateBlogPage() {
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to save')
       setPublishing(false)
+    }
+  }
+
+  async function addSuggestedWidget(p: Platform) {
+    setAddingWidget(p.id)
+    try {
+      await fetch('/api/blog-ads', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: `${p.name} — Auto (All Posts)`,
+          platformId: p.id,
+          positions: ['ALL'],
+          badge: 'Top Pick',
+          highlightPoints: [],
+          priority: 10,
+          isActive: true,
+          displayOnAllBlogs: true,
+        }),
+      })
+      setAddedWidgets((prev) => new Set(prev).add(p.id))
+    } finally {
+      setAddingWidget(null)
     }
   }
 
@@ -349,6 +384,44 @@ export default function GenerateBlogPage() {
                 </div>
               )}
             </div>
+
+            {/* Suggested Widgets (smart auto-placement) */}
+            {suggestedPlatforms.length > 0 && (
+              <div className="bg-[#0f1629] border border-yellow-400/20 rounded-xl p-5">
+                <div className="flex items-center gap-2 mb-3">
+                  <Megaphone size={15} className="text-yellow-400" />
+                  <h3 className="text-sm font-bold text-white">Suggested Affiliate Widgets</h3>
+                  <span className="text-xs text-gray-500">These platforms are mentioned in the blog</span>
+                </div>
+                <div className="flex flex-col gap-2">
+                  {suggestedPlatforms.map((p) => {
+                    const added = addedWidgets.has(p.id)
+                    return (
+                      <div key={p.id} className="flex items-center justify-between bg-white/3 border border-white/5 rounded-lg px-3 py-2">
+                        <div>
+                          <span className="text-sm text-white font-medium">{p.name}</span>
+                          {p.bonusText && <span className="text-xs text-yellow-400 ml-2">{p.bonusText}</span>}
+                        </div>
+                        {added ? (
+                          <span className="text-xs text-green-400 flex items-center gap-1">
+                            <CheckCircle size={12} /> Added to Blog Ads
+                          </span>
+                        ) : (
+                          <button
+                            onClick={() => addSuggestedWidget(p)}
+                            disabled={addingWidget === p.id}
+                            className="text-xs bg-yellow-400/10 hover:bg-yellow-400/20 text-yellow-400 border border-yellow-400/20 px-3 py-1.5 rounded-full flex items-center gap-1.5 transition-colors disabled:opacity-50"
+                          >
+                            <PlusCircle size={11} />
+                            {addingWidget === p.id ? 'Adding...' : 'Add Widget (All Posts)'}
+                          </button>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
 
             {/* Action buttons */}
             <div className="flex items-center gap-3 flex-wrap">

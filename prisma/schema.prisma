@@ -63,3 +63,49 @@ model AutoBlogSettings {
   lastPublishedAt DateTime?
   updatedAt       DateTime  @updatedAt
 }
+
+// Blog affiliate widget ads
+model BlogAd {
+  id                String   @id @default(cuid())
+  name              String
+  platformId        String
+  // JSON array of positions: HEADER, FOOTER, LEFT_SIDEBAR, RIGHT_SIDEBAR, IN_CONTENT, ALL
+  positions         String   @default("[\"ALL\"]")
+  badge             String?  // "Top Pick", "Editor's Choice", "Hot", "New"
+  highlightPoints   String   @default("[]") // JSON array of 2 strings
+  priority          Int      @default(0) // lower = shown first
+  isActive          Boolean  @default(true)
+  displayOnAllBlogs Boolean  @default(true)
+  specificBlogIds   String   @default("[]") // JSON array of blog post IDs
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+// Click tracking for affiliate links + popup interactions
+model AffiliateClick {
+  id         String   @id @default(cuid())
+  adId       String
+  platformId String
+  blogId     String?
+  blogSlug   String?
+  position   String
+  popupType  String?  // SCROLL | EXIT_INTENT | TIME  (null = inline widget)
+  action     String?  // claimed | dismissed | auto_closed  (null = inline click)
+  createdAt  DateTime @default(now())
+}
+
+// Global popup settings (singleton)
+model PopupSettings {
+  id                 String   @id @default("singleton")
+  scrollEnabled      Boolean  @default(true)
+  exitEnabled        Boolean  @default(true)
+  timeEnabled        Boolean  @default(true)
+  scrollTriggerPct   Int      @default(50)
+  timeTriggerSeconds Int      @default(60)
+  maxExitPlatforms   Int      @default(3)
+  // JSON array of platform IDs to show in popups (empty = top-rated auto)
+  popupPlatformIds   String   @default("[]")
+  displayOnAllBlogs  Boolean  @default(true)
+  specificBlogIds    String   @default("[]")
+  updatedAt          DateTime @updatedAt
+}

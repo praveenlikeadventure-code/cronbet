@@ -9,9 +9,10 @@ interface UserFormProps {
 }
 
 const ROLES = [
-  { value: 'SUPER_ADMIN', label: 'Super Admin', desc: 'Full access — platforms, blog, team management' },
-  { value: 'BLOG_EDITOR', label: 'Blog Editor', desc: 'Can create and manage blog posts only' },
-  { value: 'PLATFORM_EDITOR', label: 'Platform Editor', desc: 'Can create and manage betting platforms only' },
+  { value: 'SUPER_ADMIN', label: 'Super Admin', desc: 'Full access — platforms, blog, team, and global widget settings', color: 'yellow' },
+  { value: 'BLOG_EDITOR', label: 'Blog Editor', desc: 'Can create and manage blog posts only', color: 'blue' },
+  { value: 'PLATFORM_EDITOR', label: 'Platform Editor', desc: 'Can create and manage betting platforms only', color: 'purple' },
+  { value: 'CONTRIBUTOR', label: 'Contributor', desc: 'Write/edit blogs + add affiliate widgets to own blogs only', color: 'green' },
 ]
 
 export default function UserForm({ user, isEdit = false }: UserFormProps) {
@@ -95,34 +96,33 @@ export default function UserForm({ user, isEdit = false }: UserFormProps) {
 
       <div className="bg-[#0f1629] border border-white/10 rounded-xl p-5">
         <h2 className="text-lg font-bold text-white mb-4">Role & Permissions</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          {ROLES.map((r) => (
-            <button
-              key={r.value}
-              type="button"
-              onClick={() => update('role', r.value)}
-              className={`text-left p-4 rounded-xl border transition-colors ${
-                form.role === r.value
-                  ? r.value === 'SUPER_ADMIN'
-                    ? 'bg-yellow-400/10 border-yellow-400 text-white'
-                    : r.value === 'BLOG_EDITOR'
-                    ? 'bg-blue-400/10 border-blue-400 text-white'
-                    : 'bg-purple-400/10 border-purple-400 text-white'
-                  : 'bg-white/5 border-white/10 text-gray-400 hover:border-white/30'
-              }`}
-            >
-              <div className={`text-sm font-bold mb-1 ${
-                form.role === r.value
-                  ? r.value === 'SUPER_ADMIN' ? 'text-yellow-400'
-                  : r.value === 'BLOG_EDITOR' ? 'text-blue-400'
-                  : 'text-purple-400'
-                  : 'text-gray-300'
-              }`}>
-                {r.label}
-              </div>
-              <div className="text-xs leading-relaxed">{r.desc}</div>
-            </button>
-          ))}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {ROLES.map((r) => {
+            const active = form.role === r.value
+            const colorMap: Record<string, string> = {
+              yellow: active ? 'bg-yellow-400/10 border-yellow-400' : 'bg-white/5 border-white/10 hover:border-white/30',
+              blue:   active ? 'bg-blue-400/10 border-blue-400'     : 'bg-white/5 border-white/10 hover:border-white/30',
+              purple: active ? 'bg-purple-400/10 border-purple-400' : 'bg-white/5 border-white/10 hover:border-white/30',
+              green:  active ? 'bg-green-400/10 border-green-400'   : 'bg-white/5 border-white/10 hover:border-white/30',
+            }
+            const labelColorMap: Record<string, string> = {
+              yellow: active ? 'text-yellow-400' : 'text-gray-300',
+              blue:   active ? 'text-blue-400'   : 'text-gray-300',
+              purple: active ? 'text-purple-400' : 'text-gray-300',
+              green:  active ? 'text-green-400'  : 'text-gray-300',
+            }
+            return (
+              <button
+                key={r.value}
+                type="button"
+                onClick={() => update('role', r.value)}
+                className={`text-left p-4 rounded-xl border transition-colors ${colorMap[r.color]} ${active ? 'text-white' : 'text-gray-400'}`}
+              >
+                <div className={`text-sm font-bold mb-1 ${labelColorMap[r.color]}`}>{r.label}</div>
+                <div className="text-xs leading-relaxed">{r.desc}</div>
+              </button>
+            )
+          })}
         </div>
       </div>
 

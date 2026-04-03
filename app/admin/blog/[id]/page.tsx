@@ -5,6 +5,7 @@ import Link from 'next/link'
 import AdminNav from '../../AdminNav'
 import { prisma } from '@/lib/prisma'
 import BlogPostForm from '@/components/blog/BlogPostForm'
+import BlogAffiliateWidgets from '@/components/blog/BlogAffiliateWidgets'
 
 export default async function EditBlogPostPage({ params }: { params: { id: string } }) {
   const session = await getServerSession(authOptions)
@@ -24,6 +25,7 @@ export default async function EditBlogPostPage({ params }: { params: { id: strin
           <h1 className="text-2xl font-extrabold text-white">Edit Post</h1>
         </div>
         <BlogPostForm post={post} isEdit />
+        <BlogAffiliateWidgets blogId={post.id} />
       </div>
     </div>
   )
