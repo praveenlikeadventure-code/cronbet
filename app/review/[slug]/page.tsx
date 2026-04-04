@@ -7,9 +7,12 @@ import { prisma } from '@/lib/prisma'
 import { parsePlatform, parsePlatforms } from '@/lib/types'
 import StarRating from '@/components/ui/StarRating'
 import PlatformCard from '@/components/platform/PlatformCard'
+import { getEffectiveCountry } from '@/lib/geo'
+import { getGeoOffer, getGeoOffersForPlatforms, applyGeoOffer } from '@/lib/geo-offers'
 
 interface Props {
   params: { slug: string }
+  searchParams?: Record<string, string>
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -34,19 +37,28 @@ const ratingCategories = [
   { label: 'Payments', key: 'payments' },
 ]
 
-export default async function ReviewPage({ params }: Props) {
+export default async function ReviewPage({ params, searchParams }: Props) {
   const _platform = await prisma.bettingPlatform.findUnique({
     where: { slug: params.slug, isActive: true },
   })
 
   if (!_platform) notFound()
-  const platform = parsePlatform(_platform as Record<string, unknown>)
+  const basePlatform = parsePlatform(_platform as Record<string, unknown>)
 
-  const related = parsePlatforms((await prisma.bettingPlatform.findMany({
-    where: { isActive: true, id: { not: platform.id } },
+  const relatedRaw = parsePlatforms((await prisma.bettingPlatform.findMany({
+    where: { isActive: true, id: { not: basePlatform.id } },
     orderBy: { rank: 'asc' },
     take: 3,
   })) as Record<string, unknown>[])
+
+  // Geo-aware offers
+  const countryCode = getEffectiveCountry(searchParams)
+  const [primaryGeo, relatedGeoOffers] = await Promise.all([
+    getGeoOffer(basePlatform.id, countryCode),
+    getGeoOffersForPlatforms(relatedRaw.map((p) => p.id), countryCode),
+  ])
+  const platform = applyGeoOffer(basePlatform, primaryGeo ?? undefined)
+  const related = relatedRaw.map((p) => applyGeoOffer(p, relatedGeoOffers.get(p.id)))
 
   const ratingValues: Record<string, number> = {
     uiux: Math.min(5, platform.rating + 0.1),

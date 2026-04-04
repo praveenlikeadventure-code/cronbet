@@ -6,6 +6,7 @@ import AdminNav from '../../AdminNav'
 import { prisma } from '@/lib/prisma'
 import { parsePlatform } from '@/lib/types'
 import PlatformForm from '@/components/platform/PlatformForm'
+import GeoOffersManager from '@/components/platform/GeoOffersManager'
 
 export default async function EditPlatformPage({ params }: { params: { id: string } }) {
   const session = await getServerSession(authOptions)
@@ -26,6 +27,7 @@ export default async function EditPlatformPage({ params }: { params: { id: strin
           <h1 className="text-2xl font-extrabold text-white">Edit: {platform.name}</h1>
         </div>
         <PlatformForm platform={platform} isEdit />
+        <GeoOffersManager platformId={platform.id} platformAffiliateUrl={platform.affiliateUrl} />
       </div>
     </div>
   )

@@ -4,11 +4,13 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { cookies } from 'next/headers'
 import { prisma } from '@/lib/prisma'
-import { type BettingPlatform, parsePlatforms } from '@/lib/types'
+import { parsePlatforms } from '@/lib/types'
 import PlatformCard from '@/components/platform/PlatformCard'
 import ComparisonTable from '@/components/platform/ComparisonTable'
 import { Shield, Star, TrendingUp, Users } from 'lucide-react'
 import { type Locale, SUPPORTED_LOCALES, DEFAULT_LOCALE, LOCALE_COOKIE, getTranslations } from '@/lib/i18n'
+import { getEffectiveCountry } from '@/lib/geo'
+import { getGeoOffersForPlatforms, applyGeoOffer } from '@/lib/geo-offers'
 
 export const metadata: Metadata = {
   title: 'CRONBET - Best Betting Sites Comparison 2024',
@@ -16,21 +18,20 @@ export const metadata: Metadata = {
     'Compare the best online betting sites. Expert reviews of 1xBet, Melbet, 22Bet and more. Find the biggest bonuses and best odds for 2024.',
 }
 
-async function getPlatforms(): Promise<BettingPlatform[]> {
-  const results = await prisma.bettingPlatform.findMany({
-    where: { isActive: true },
-    orderBy: { rank: 'asc' },
-  })
-  return parsePlatforms(results as Record<string, unknown>[])
-}
-
-export default async function HomePage() {
+export default async function HomePage({ searchParams }: { searchParams?: Record<string, string> }) {
   const cookieStore = cookies()
   const raw = cookieStore.get(LOCALE_COOKIE)?.value
   const locale: Locale = raw && SUPPORTED_LOCALES.includes(raw as Locale) ? (raw as Locale) : DEFAULT_LOCALE
   const t = getTranslations(locale)
 
-  const platforms = await getPlatforms()
+  const rawPlatforms = await prisma.bettingPlatform.findMany({ where: { isActive: true }, orderBy: { rank: 'asc' } })
+  const parsedPlatforms = parsePlatforms(rawPlatforms as Record<string, unknown>[])
+
+  // Geo-aware offer resolution (single batch query)
+  const countryCode = getEffectiveCountry(searchParams)
+  const geoOffers = await getGeoOffersForPlatforms(parsedPlatforms.map((p) => p.id), countryCode)
+  const platforms = parsedPlatforms.map((p) => applyGeoOffer(p, geoOffers.get(p.id)))
+
   const featured = platforms.filter((p) => p.isFeatured)
 
   const faqs = [

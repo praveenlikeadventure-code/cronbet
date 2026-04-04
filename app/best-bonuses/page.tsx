@@ -6,6 +6,9 @@ import Image from 'next/image'
 import { ExternalLink, Gift, Clock } from 'lucide-react'
 import { prisma } from '@/lib/prisma'
 import StarRating from '@/components/ui/StarRating'
+import { getEffectiveCountry } from '@/lib/geo'
+import { getGeoOffersForPlatforms, applyGeoOffer } from '@/lib/geo-offers'
+import { parsePlatforms } from '@/lib/types'
 
 export const metadata: Metadata = {
   title: 'Best Betting Bonuses 2024 - Top Welcome Offers',
@@ -13,11 +16,13 @@ export const metadata: Metadata = {
     'Compare the best betting welcome bonuses available in 2024. Find the biggest deposit bonuses, free bets, and exclusive offers from top platforms.',
 }
 
-export default async function BestBonusesPage() {
-  const platforms = await prisma.bettingPlatform.findMany({
-    where: { isActive: true },
-    orderBy: { rank: 'asc' },
-  })
+export default async function BestBonusesPage({ searchParams }: { searchParams?: Record<string, string> }) {
+  const rawPlatforms = await prisma.bettingPlatform.findMany({ where: { isActive: true }, orderBy: { rank: 'asc' } })
+  const parsed = parsePlatforms(rawPlatforms as Record<string, unknown>[])
+
+  const countryCode = getEffectiveCountry(searchParams)
+  const geoOffers = await getGeoOffersForPlatforms(parsed.map((p) => p.id), countryCode)
+  const platforms = parsed.map((p) => applyGeoOffer(p, geoOffers.get(p.id)))
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">

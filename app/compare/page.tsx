@@ -4,6 +4,8 @@ import type { Metadata } from 'next'
 import { prisma } from '@/lib/prisma'
 import { parsePlatforms } from '@/lib/types'
 import ComparisonTable from '@/components/platform/ComparisonTable'
+import { getEffectiveCountry } from '@/lib/geo'
+import { getGeoOffersForPlatforms, applyGeoOffer } from '@/lib/geo-offers'
 
 export const metadata: Metadata = {
   title: 'Compare Betting Sites 2024 - Full Table',
@@ -11,11 +13,13 @@ export const metadata: Metadata = {
     'Full comparison of all top betting sites. Sort by bonus, rating, min deposit, payout speed, and more. Find your perfect betting platform.',
 }
 
-export default async function ComparePage() {
-  const platforms = parsePlatforms((await prisma.bettingPlatform.findMany({
-    where: { isActive: true },
-    orderBy: { rank: 'asc' },
-  })) as Record<string, unknown>[])
+export default async function ComparePage({ searchParams }: { searchParams?: Record<string, string> }) {
+  const rawPlatforms = await prisma.bettingPlatform.findMany({ where: { isActive: true }, orderBy: { rank: 'asc' } })
+  const parsed = parsePlatforms(rawPlatforms as Record<string, unknown>[])
+
+  const countryCode = getEffectiveCountry(searchParams)
+  const geoOffers = await getGeoOffersForPlatforms(parsed.map((p) => p.id), countryCode)
+  const platforms = parsed.map((p) => applyGeoOffer(p, geoOffers.get(p.id)))
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">

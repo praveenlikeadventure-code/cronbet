@@ -28,6 +28,27 @@ model BettingPlatform {
   description  String?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+  geoOffers    PlatformGeoOffer[]
+}
+
+// Geo-specific bonus offers per platform per country
+model PlatformGeoOffer {
+  id             String          @id @default(cuid())
+  platformId     String
+  platform       BettingPlatform @relation(fields: [platformId], references: [id], onDelete: Cascade)
+  countryCode    String          // "IN", "BD", "PK" … or "DEFAULT"
+  countryName    String          // "India", "Bangladesh" … or "Default"
+  currencyCode   String          // "INR", "BDT", "USD" …
+  currencySymbol String          // "₹", "৳", "$" …
+  bonusText      String          // "100% up to ₹8,500"
+  bonusAmount    String          // "8500"
+  minDeposit     String          // "₹100"
+  affiliateUrl   String          // geo-specific tracking link
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@unique([platformId, countryCode])
 }
 
 model BlogPost {

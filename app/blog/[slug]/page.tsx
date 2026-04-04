@@ -7,9 +7,12 @@ import { Calendar, Tag, ArrowLeft } from 'lucide-react'
 import { prisma } from '@/lib/prisma'
 import BlogPlatformWidget from '@/components/BlogPlatformWidget'
 import PopupWidgets from '@/components/blog/PopupWidgets'
+import { getEffectiveCountry } from '@/lib/geo'
+import { getGeoOffersForPlatforms } from '@/lib/geo-offers'
 
 interface Props {
   params: { slug: string }
+  searchParams?: Record<string, string>
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -22,8 +25,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   }
 }
 
-// Fetches active ads that apply to a given blog post
-async function getAdsForPost(blogId: string) {
+// Fetches active ads that apply to a given blog post, with optional geo overrides
+async function getAdsForPost(blogId: string, countryCode = 'DEFAULT') {
   const allAds = await prisma.blogAd.findMany({
     where: { isActive: true },
     orderBy: [{ priority: 'asc' }, { createdAt: 'asc' }],
@@ -42,22 +45,33 @@ async function getAdsForPost(blogId: string) {
   if (applicable.length === 0) return []
 
   const platformIds = Array.from(new Set(applicable.map((a) => a.platformId)))
-  const platforms = await prisma.bettingPlatform.findMany({
-    where: { id: { in: platformIds }, isActive: true },
-  })
+  const [platforms, geoOffers] = await Promise.all([
+    prisma.bettingPlatform.findMany({ where: { id: { in: platformIds }, isActive: true } }),
+    getGeoOffersForPlatforms(platformIds, countryCode),
+  ])
   const platformMap = Object.fromEntries(platforms.map((p) => [p.id, p]))
 
   return applicable
     .filter((ad) => platformMap[ad.platformId])
-    .map((ad) => ({
-      id: ad.id,
-      platformId: ad.platformId,
-      positions: (() => { try { return JSON.parse(ad.positions || '["ALL"]') } catch { return ['ALL'] } })() as string[],
-      badge: ad.badge,
-      highlightPoints: (() => { try { return JSON.parse(ad.highlightPoints || '[]') } catch { return [] } })() as string[],
-      priority: ad.priority,
-      platform: platformMap[ad.platformId],
-    }))
+    .map((ad) => {
+      const base = platformMap[ad.platformId]
+      const geo = geoOffers.get(ad.platformId)
+      return {
+        id: ad.id,
+        platformId: ad.platformId,
+        positions: (() => { try { return JSON.parse(ad.positions || '["ALL"]') } catch { return ['ALL'] } })() as string[],
+        badge: ad.badge,
+        highlightPoints: (() => { try { return JSON.parse(ad.highlightPoints || '[]') } catch { return [] } })() as string[],
+        priority: ad.priority,
+        // Apply geo offer: override bonusText, minDeposit, affiliateUrl
+        platform: {
+          ...base,
+          bonusText: geo ? geo.bonusText : base.bonusText,
+          minDeposit: geo?.minDeposit || base.minDeposit,
+          affiliateUrl: geo?.affiliateUrl || base.affiliateUrl,
+        },
+      }
+    })
 }
 
 function getAdsForPosition(ads: Awaited<ReturnType<typeof getAdsForPost>>, position: string) {
@@ -131,15 +145,17 @@ function renderContent(
   return elements
 }
 
-export default async function BlogPostPage({ params }: Props) {
+export default async function BlogPostPage({ params, searchParams }: Props) {
   const post = await prisma.blogPost.findUnique({
     where: { slug: params.slug, isPublished: true },
   })
 
   if (!post) notFound()
 
+  const countryCode = getEffectiveCountry(searchParams)
+
   const [ads, popupSettingsRaw] = await Promise.all([
-    getAdsForPost(post.id),
+    getAdsForPost(post.id, countryCode),
     prisma.popupSettings.findUnique({ where: { id: 'singleton' } }),
   ])
 
@@ -184,17 +200,23 @@ export default async function BlogPostPage({ params }: Props) {
     ...popupPlatformsRaw.filter((p) => !contentLower.includes(p.name.toLowerCase())),
   ]
 
-  const popupPlatforms = popupPlatformsRaw.map((p) => ({
-    id: p.id,
-    name: p.name,
-    slug: p.slug,
-    logo: p.logo,
-    bonusText: p.bonusText,
-    affiliateUrl: p.affiliateUrl,
-    rating: p.rating,
-    minDeposit: p.minDeposit,
-    pros: (() => { try { return JSON.parse(p.pros || '[]') as string[] } catch { return [] } })(),
-  }))
+  // Apply geo offers to popup platforms (batch)
+  const popupGeoOffers = await getGeoOffersForPlatforms(popupPlatformsRaw.map((p) => p.id), countryCode)
+
+  const popupPlatforms = popupPlatformsRaw.map((p) => {
+    const geo = popupGeoOffers.get(p.id)
+    return {
+      id: p.id,
+      name: p.name,
+      slug: p.slug,
+      logo: p.logo,
+      bonusText: geo ? geo.bonusText : p.bonusText,         // raw (no flag) for popup display
+      affiliateUrl: geo?.affiliateUrl || p.affiliateUrl,
+      rating: p.rating,
+      minDeposit: geo?.minDeposit || p.minDeposit,
+      pros: (() => { try { return JSON.parse(p.pros || '[]') as string[] } catch { return [] } })(),
+    }
+  })
 
   return (
     <div className="min-h-screen bg-[#060910]">
