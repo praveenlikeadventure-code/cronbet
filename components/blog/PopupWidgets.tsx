@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { fetchGeoData, detectGeoCountry } from '@/lib/client-geo-data'
+import { fetchGeoData, getGeoCountry } from '@/lib/client-geo-data'
 import Image from 'next/image'
 import Link from 'next/link'
 import { X, Star, CheckCircle, ExternalLink, Trophy, Gift, Clock } from 'lucide-react'
@@ -130,22 +130,22 @@ export default function PopupWidgets({ blogId, blogSlug, platforms: initialPlatf
 
   // Geo update: upgrade platform bonuses after country detection
   useEffect(() => {
-    const country = detectGeoCountry()
-    if (!country) return
-
-    fetchGeoData(country).then((geoData) => {
-      setPlatforms((prev) =>
-        prev.map((p) => {
-          const d = geoData[p.id]
-          if (!d) return p
-          return {
-            ...p,
-            bonusText: d.bonusText || p.bonusText,
-            minDeposit: d.minDeposit || p.minDeposit,
-            affiliateUrl: d.affiliateUrl || p.affiliateUrl,
-          }
-        }),
-      )
+    getGeoCountry().then((country) => {
+      if (!country || country === 'DEFAULT') return
+      return fetchGeoData(country).then((geoData) => {
+        setPlatforms((prev) =>
+          prev.map((p) => {
+            const d = geoData[p.id]
+            if (!d) return p
+            return {
+              ...p,
+              bonusText: d.bonusText || p.bonusText,
+              minDeposit: d.minDeposit || p.minDeposit,
+              affiliateUrl: d.affiliateUrl || p.affiliateUrl,
+            }
+          }),
+        )
+      })
     })
   }, [])
 
