@@ -3,8 +3,7 @@ export const dynamic = 'force-dynamic'
 import type { Metadata } from 'next'
 import { prisma } from '@/lib/prisma'
 import { parsePlatforms } from '@/lib/types'
-import ComparisonTable from '@/components/platform/ComparisonTable'
-import { getEffectiveCountry } from '@/lib/geo'
+import GeoAwareCompare from '@/components/GeoAwareCompare'
 import { getGeoOffersForPlatforms, applyGeoOffer } from '@/lib/geo-offers'
 
 export const metadata: Metadata = {
@@ -13,12 +12,12 @@ export const metadata: Metadata = {
     'Full comparison of all top betting sites. Sort by bonus, rating, min deposit, payout speed, and more. Find your perfect betting platform.',
 }
 
-export default async function ComparePage({ searchParams }: { searchParams?: Record<string, string> }) {
+export default async function ComparePage() {
   const rawPlatforms = await prisma.bettingPlatform.findMany({ where: { isActive: true }, orderBy: { rank: 'asc' } })
   const parsed = parsePlatforms(rawPlatforms as Record<string, unknown>[])
 
-  const countryCode = getEffectiveCountry(searchParams)
-  const geoOffers = await getGeoOffersForPlatforms(parsed.map((p) => p.id), countryCode)
+  // SSR with DEFAULT — client upgrades to geo-specific after detection
+  const geoOffers = await getGeoOffersForPlatforms(parsed.map((p) => p.id), 'DEFAULT')
   const platforms = parsed.map((p) => applyGeoOffer(p, geoOffers.get(p.id)))
 
   return (
@@ -39,7 +38,7 @@ export default async function ComparePage({ searchParams }: { searchParams?: Rec
       </p>
 
       <div className="bg-[#0f1629] border border-white/10 rounded-xl p-4 sm:p-6">
-        <ComparisonTable platforms={platforms} />
+        <GeoAwareCompare initialPlatforms={platforms} />
       </div>
 
       <p className="text-gray-500 text-xs mt-4">

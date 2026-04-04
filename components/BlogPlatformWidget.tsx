@@ -1,8 +1,10 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { CheckCircle, ExternalLink, Star } from 'lucide-react'
+import { fetchGeoData, detectGeoCountry } from '@/lib/client-geo-data'
 
 interface Platform {
   id: string
@@ -230,7 +232,7 @@ function MiniWidget({
 
 // ─── Main export ──────────────────────────────────────────────────────────────
 export default function BlogPlatformWidget({
-  platform,
+  platform: initialPlatform,
   adId,
   badge,
   highlightPoints = [],
@@ -239,6 +241,24 @@ export default function BlogPlatformWidget({
   blogId,
   blogSlug,
 }: BlogPlatformWidgetProps) {
+  const [platform, setPlatform] = useState(initialPlatform)
+
+  useEffect(() => {
+    const country = detectGeoCountry()
+    if (!country) return
+
+    fetchGeoData(country).then((data) => {
+      const d = data[initialPlatform.id]
+      if (!d) return
+      setPlatform((prev) => ({
+        ...prev,
+        bonusText: d.bonusText || prev.bonusText,
+        minDeposit: d.minDeposit || prev.minDeposit,
+        affiliateUrl: d.affiliateUrl || prev.affiliateUrl,
+      }))
+    })
+  }, [initialPlatform.id])
+
   function handleClaimClick(e: React.MouseEvent) {
     e.preventDefault()
     fetch('/api/affiliate-click', {

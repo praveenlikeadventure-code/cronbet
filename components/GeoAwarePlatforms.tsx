@@ -1,9 +1,8 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
-import { useGeo } from '@/hooks/useGeo'
 import type { BettingPlatform } from '@/lib/types'
-import type { PlatformGeoData } from '@/app/api/platforms/geo-data/route'
+import { useGeoCurrency } from '@/hooks/useGeoCurrency'
+import GeoDebugBanner from '@/components/GeoDebugBanner'
 import PlatformCard from '@/components/platform/PlatformCard'
 import ComparisonTable from '@/components/platform/ComparisonTable'
 
@@ -17,22 +16,6 @@ interface GeoAwarePlatformsProps {
   viewAllLabel: string
 }
 
-function applyGeoData(
-  platforms: BettingPlatform[],
-  geoData: Record<string, PlatformGeoData>,
-): BettingPlatform[] {
-  return platforms.map((p) => {
-    const d = geoData[p.id]
-    if (!d) return p
-    return {
-      ...p,
-      bonusText: d.bonusText || p.bonusText,
-      minDeposit: d.minDeposit || p.minDeposit,
-      affiliateUrl: d.affiliateUrl || p.affiliateUrl,
-    }
-  })
-}
-
 export default function GeoAwarePlatforms({
   initialPlatforms,
   initialFeatured,
@@ -42,34 +25,17 @@ export default function GeoAwarePlatforms({
   allSubtitle,
   viewAllLabel,
 }: GeoAwarePlatformsProps) {
-  const { geo, isLoading } = useGeo()
-  const [platforms, setPlatforms] = useState(initialPlatforms)
-  const [featured, setFeatured] = useState(initialFeatured)
-  const lastCountry = useRef<string | null>(null)
+  // Combine into one geo update call, then split back out
+  const combined = [...initialFeatured, ...initialPlatforms.filter((p) => !initialFeatured.find((f) => f.id === p.id))]
+  const { platforms: updatedCombined, geo } = useGeoCurrency(combined)
 
-  useEffect(() => {
-    if (!geo || geo.isDefault) return
-    if (geo.countryCode === lastCountry.current) return
-    lastCountry.current = geo.countryCode
-
-    fetch(`/api/platforms/geo-data?country=${geo.countryCode}`)
-      .then((r) => r.json())
-      .then((geoData: Record<string, PlatformGeoData>) => {
-        setPlatforms(applyGeoData(initialPlatforms, geoData))
-        setFeatured(applyGeoData(initialFeatured, geoData))
-      })
-      .catch(() => {})
-  }, [geo, initialPlatforms, initialFeatured])
+  const featuredIds = new Set(initialFeatured.map((p) => p.id))
+  const featured = updatedCombined.filter((p) => featuredIds.has(p.id))
+  const platforms = updatedCombined
 
   return (
     <>
-      {/* Debug banner — remove once geo detection is confirmed working in production */}
-      {!isLoading && geo && (
-        <div className="fixed bottom-4 right-4 z-50 bg-black/80 border border-white/20 text-white text-xs px-3 py-2 rounded-lg shadow-lg">
-          {geo.flag} Detected: <strong>{geo.countryCode}</strong>
-          {geo.isDefault ? ' (default)' : ''}
-        </div>
-      )}
+      <GeoDebugBanner geo={geo} />
 
       {/* Featured Top 5 */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">

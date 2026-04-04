@@ -7,12 +7,10 @@ import { Calendar, Tag, ArrowLeft } from 'lucide-react'
 import { prisma } from '@/lib/prisma'
 import BlogPlatformWidget from '@/components/BlogPlatformWidget'
 import PopupWidgets from '@/components/blog/PopupWidgets'
-import { getEffectiveCountry } from '@/lib/geo'
 import { getGeoOffersForPlatforms } from '@/lib/geo-offers'
 
 interface Props {
   params: { slug: string }
-  searchParams?: Record<string, string>
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -145,17 +143,16 @@ function renderContent(
   return elements
 }
 
-export default async function BlogPostPage({ params, searchParams }: Props) {
+export default async function BlogPostPage({ params }: Props) {
   const post = await prisma.blogPost.findUnique({
     where: { slug: params.slug, isPublished: true },
   })
 
   if (!post) notFound()
 
-  const countryCode = getEffectiveCountry(searchParams)
-
+  // SSR with DEFAULT geo — BlogPlatformWidget and PopupWidgets self-update client-side
   const [ads, popupSettingsRaw] = await Promise.all([
-    getAdsForPost(post.id, countryCode),
+    getAdsForPost(post.id, 'DEFAULT'),
     prisma.popupSettings.findUnique({ where: { id: 'singleton' } }),
   ])
 
@@ -201,7 +198,7 @@ export default async function BlogPostPage({ params, searchParams }: Props) {
   ]
 
   // Apply geo offers to popup platforms (batch)
-  const popupGeoOffers = await getGeoOffersForPlatforms(popupPlatformsRaw.map((p) => p.id), countryCode)
+  const popupGeoOffers = await getGeoOffersForPlatforms(popupPlatformsRaw.map((p) => p.id), 'DEFAULT')
 
   const popupPlatforms = popupPlatformsRaw.map((p) => {
     const geo = popupGeoOffers.get(p.id)
