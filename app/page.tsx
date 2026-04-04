@@ -5,11 +5,9 @@ import Link from 'next/link'
 import { cookies } from 'next/headers'
 import { prisma } from '@/lib/prisma'
 import { parsePlatforms } from '@/lib/types'
-import PlatformCard from '@/components/platform/PlatformCard'
-import ComparisonTable from '@/components/platform/ComparisonTable'
+import GeoAwarePlatforms from '@/components/GeoAwarePlatforms'
 import { Shield, Star, TrendingUp, Users } from 'lucide-react'
 import { type Locale, SUPPORTED_LOCALES, DEFAULT_LOCALE, LOCALE_COOKIE, getTranslations } from '@/lib/i18n'
-import { getEffectiveCountry } from '@/lib/geo'
 import { getGeoOffersForPlatforms, applyGeoOffer } from '@/lib/geo-offers'
 
 export const metadata: Metadata = {
@@ -18,7 +16,7 @@ export const metadata: Metadata = {
     'Compare the best online betting sites. Expert reviews of 1xBet, Melbet, 22Bet and more. Find the biggest bonuses and best odds for 2024.',
 }
 
-export default async function HomePage({ searchParams }: { searchParams?: Record<string, string> }) {
+export default async function HomePage() {
   const cookieStore = cookies()
   const raw = cookieStore.get(LOCALE_COOKIE)?.value
   const locale: Locale = raw && SUPPORTED_LOCALES.includes(raw as Locale) ? (raw as Locale) : DEFAULT_LOCALE
@@ -27,9 +25,8 @@ export default async function HomePage({ searchParams }: { searchParams?: Record
   const rawPlatforms = await prisma.bettingPlatform.findMany({ where: { isActive: true }, orderBy: { rank: 'asc' } })
   const parsedPlatforms = parsePlatforms(rawPlatforms as Record<string, unknown>[])
 
-  // Geo-aware offer resolution (single batch query)
-  const countryCode = getEffectiveCountry(searchParams)
-  const geoOffers = await getGeoOffersForPlatforms(parsedPlatforms.map((p) => p.id), countryCode)
+  // SSR: use DEFAULT offers — client will upgrade to geo-specific after detection
+  const geoOffers = await getGeoOffersForPlatforms(parsedPlatforms.map((p) => p.id), 'DEFAULT')
   const platforms = parsedPlatforms.map((p) => applyGeoOffer(p, geoOffers.get(p.id)))
 
   const featured = platforms.filter((p) => p.isFeatured)
@@ -108,34 +105,16 @@ export default async function HomePage({ searchParams }: { searchParams?: Record
         </div>
       </section>
 
-      {/* Featured Top 5 */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h2 className="text-3xl font-extrabold text-white">{t.sections.top5Title}</h2>
-            <p className="text-gray-400 mt-1">
-              {t.sections.top5Subtitle} {new Date().getFullYear()}
-            </p>
-          </div>
-          <Link href="/compare" className="text-yellow-400 hover:underline text-sm hidden sm:block">
-            {t.sections.viewAll}
-          </Link>
-        </div>
-        <div className="space-y-4">
-          {featured.map((platform, i) => (
-            <PlatformCard key={platform.id} platform={platform} rank={i + 1} />
-          ))}
-        </div>
-      </section>
-
-      {/* Full Comparison Table */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
-        <h2 className="text-3xl font-extrabold text-white mb-3">{t.sections.allSitesTitle}</h2>
-        <p className="text-gray-400 mb-8">{t.sections.allSitesSubtitle}</p>
-        <div className="bg-[#0f1629] border border-white/10 rounded-xl p-4 sm:p-6">
-          <ComparisonTable platforms={platforms} />
-        </div>
-      </section>
+      {/* Geo-aware Featured + Comparison Table (client component upgrades offers after geo detection) */}
+      <GeoAwarePlatforms
+        initialPlatforms={platforms}
+        initialFeatured={featured}
+        featuredTitle={t.sections.top5Title}
+        featuredSubtitle={t.sections.top5Subtitle}
+        allTitle={t.sections.allSitesTitle}
+        allSubtitle={t.sections.allSitesSubtitle}
+        viewAllLabel={t.sections.viewAll}
+      />
 
       {/* FAQ */}
       <section className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
