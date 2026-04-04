@@ -67,6 +67,10 @@ async function getAdsForPost(blogId: string, countryCode = 'DEFAULT') {
           bonusText: geo ? geo.bonusText : base.bonusText,
           minDeposit: geo?.minDeposit || base.minDeposit,
           affiliateUrl: geo?.affiliateUrl || base.affiliateUrl,
+          // Pass visibility fields so BlogPlatformWidget can self-hide
+          visibilityType: base.visibilityType,
+          allowedCountries: (() => { try { return JSON.parse(base.allowedCountries || '[]') } catch { return [] } })(),
+          blockedCountries: (() => { try { return JSON.parse(base.blockedCountries || '[]') } catch { return [] } })(),
         },
       }
     })
@@ -212,6 +216,9 @@ export default async function BlogPostPage({ params }: Props) {
       rating: p.rating,
       minDeposit: geo?.minDeposit || p.minDeposit,
       pros: (() => { try { return JSON.parse(p.pros || '[]') as string[] } catch { return [] } })(),
+      visibilityType: p.visibilityType,
+      allowedCountries: (() => { try { return JSON.parse(p.allowedCountries || '[]') as string[] } catch { return [] } })(),
+      blockedCountries: (() => { try { return JSON.parse(p.blockedCountries || '[]') as string[] } catch { return [] } })(),
     }
   })
 

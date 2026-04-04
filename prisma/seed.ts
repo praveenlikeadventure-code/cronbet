@@ -35,6 +35,9 @@ async function main() {
       payoutSpeed: '1-3 days',
       license: 'Curaçao',
       description: '1xBet is one of the world\'s largest online betting platforms, offering thousands of sports markets and a comprehensive casino section.',
+      visibilityType: 'ALLOWED_ONLY',
+      allowedCountries: ['IN', 'BD', 'PK', 'NG', 'KE', 'GH', 'UG', 'TZ', 'RU', 'UA', 'BR', 'MX'],
+      blockedCountries: [],
     },
     {
       name: 'Melbet',
@@ -52,6 +55,9 @@ async function main() {
       payoutSpeed: '1-5 days',
       license: 'Curaçao',
       description: 'Melbet offers an impressive sportsbook with over 1000 events daily and a generous welcome bonus for new players.',
+      visibilityType: 'ALLOWED_ONLY',
+      allowedCountries: ['IN', 'BD', 'PK', 'NG', 'KE', 'GH', 'UG', 'TZ', 'RU', 'UA'],
+      blockedCountries: [],
     },
     {
       name: '22Bet',
@@ -69,6 +75,9 @@ async function main() {
       payoutSpeed: '1-3 days',
       license: 'Curaçao',
       description: '22Bet provides one of the largest welcome bonuses in the industry along with a crypto-friendly platform and competitive odds.',
+      visibilityType: 'ALLOWED_ONLY',
+      allowedCountries: ['IN', 'BD', 'PK', 'NG', 'KE', 'GH', 'BR', 'UG', 'TZ'],
+      blockedCountries: [],
     },
     {
       name: 'LeonBet',
@@ -86,6 +95,9 @@ async function main() {
       payoutSpeed: '1-3 days',
       license: 'Curaçao',
       description: 'LeonBet is a reliable betting platform known for its clean interface and solid customer support.',
+      visibilityType: 'ALL_COUNTRIES',
+      allowedCountries: [],
+      blockedCountries: [],
     },
     {
       name: 'Mostbet',
@@ -103,6 +115,9 @@ async function main() {
       payoutSpeed: '1-3 days',
       license: 'Curaçao',
       description: 'Mostbet offers a 125% welcome bonus and is especially popular in Asia with excellent cricket and kabaddi coverage.',
+      visibilityType: 'ALLOWED_ONLY',
+      allowedCountries: ['IN', 'BD', 'PK', 'NG', 'KE', 'TZ', 'UG'],
+      blockedCountries: [],
     },
     {
       name: 'Bet365',
@@ -120,6 +135,9 @@ async function main() {
       payoutSpeed: '1-5 days',
       license: 'UK Gambling Commission, Gibraltar',
       description: 'Bet365 is the world\'s largest online sports betting company, trusted by millions worldwide for its reliability and extensive markets.',
+      visibilityType: 'BLOCKED_ONLY',
+      allowedCountries: [],
+      blockedCountries: ['US'],
     },
     {
       name: 'Betway',
@@ -137,6 +155,9 @@ async function main() {
       payoutSpeed: '1-5 days',
       license: 'Malta Gaming Authority, UK Gambling Commission',
       description: 'Betway is a fully licensed and regulated betting platform known for its eSports coverage and trustworthy operations.',
+      visibilityType: 'ALL_COUNTRIES',
+      allowedCountries: [],
+      blockedCountries: [],
     },
     {
       name: 'Pin-Up',
@@ -154,6 +175,9 @@ async function main() {
       payoutSpeed: '1-3 days',
       license: 'Curaçao',
       description: 'Pin-Up Bet combines an attractive casino and sportsbook with one of the largest welcome bonuses available for new players.',
+      visibilityType: 'ALL_COUNTRIES',
+      allowedCountries: [],
+      blockedCountries: [],
     },
   ]
 
@@ -164,6 +188,8 @@ async function main() {
       cons: JSON.stringify(platform.cons),
       sports: JSON.stringify(platform.sports),
       payments: JSON.stringify(platform.payments),
+      allowedCountries: JSON.stringify(platform.allowedCountries),
+      blockedCountries: JSON.stringify(platform.blockedCountries),
     }
     await prisma.bettingPlatform.upsert({
       where: { slug: platform.slug },

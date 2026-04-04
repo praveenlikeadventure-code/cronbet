@@ -5,16 +5,24 @@ import Link from 'next/link'
 import { ExternalLink, Clock } from 'lucide-react'
 import type { BettingPlatform } from '@/lib/types'
 import { useGeoCurrency } from '@/hooks/useGeoCurrency'
+import { filterPlatformsWithFallback } from '@/lib/filterPlatformsByGeo'
 import GeoDebugBanner from '@/components/GeoDebugBanner'
 import StarRating from '@/components/ui/StarRating'
 
 export default function GeoAwareBonuses({ initialPlatforms }: { initialPlatforms: BettingPlatform[] }) {
-  const { platforms, geo } = useGeoCurrency(initialPlatforms)
+  const { platforms: geoPlatforms, geo } = useGeoCurrency(initialPlatforms)
+  const { platforms, usingFallback } = (geo && !geo.isDefault)
+    ? filterPlatformsWithFallback(geoPlatforms, geo.countryCode)
+    : { platforms: geoPlatforms, usingFallback: false }
 
   return (
     <>
       <GeoDebugBanner geo={geo} />
-
+      {usingFallback && (
+        <p className="text-yellow-400/70 text-sm mb-6 bg-yellow-400/5 border border-yellow-400/20 rounded-lg px-4 py-2">
+          Betting platforms may not be available in your region. Showing global options.
+        </p>
+      )}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
         {platforms.map((platform, i) => (
           <div

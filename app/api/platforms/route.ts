@@ -6,7 +6,7 @@ import { parsePlatforms } from '@/lib/types'
 
 function serializeArrayFields(data: Record<string, unknown>) {
   const result = { ...data }
-  for (const field of ['pros', 'cons', 'sports', 'payments']) {
+  for (const field of ['pros', 'cons', 'sports', 'payments', 'allowedCountries', 'blockedCountries']) {
     if (Array.isArray(result[field])) result[field] = JSON.stringify(result[field])
   }
   return result

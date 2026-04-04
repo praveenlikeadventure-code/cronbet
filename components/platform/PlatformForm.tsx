@@ -2,8 +2,9 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { PlusCircle, X } from 'lucide-react'
-import { BettingPlatform } from '@/lib/types'
+import { PlusCircle, X, Globe, Target, Ban } from 'lucide-react'
+import { BettingPlatform, VisibilityType } from '@/lib/types'
+import { ALL_COUNTRIES_LIST } from '@/lib/geo-data'
 
 interface PlatformFormProps {
   platform?: Partial<BettingPlatform>
@@ -34,7 +35,11 @@ export default function PlatformForm({ platform, isEdit = false }: PlatformFormP
     cons: platform?.cons || [''],
     sports: platform?.sports || [],
     payments: platform?.payments || [],
+    visibilityType: (platform?.visibilityType || 'ALL_COUNTRIES') as VisibilityType,
+    allowedCountries: platform?.allowedCountries || [] as string[],
+    blockedCountries: platform?.blockedCountries || [] as string[],
   })
+  const [countrySearch, setCountrySearch] = useState('')
 
   const update = (key: string, value: unknown) => setForm((f) => ({ ...f, [key]: value }))
 
@@ -54,6 +59,19 @@ export default function PlatformForm({ platform, isEdit = false }: PlatformFormP
     const arr = form[key]
     update(key, arr.includes(value) ? arr.filter((v) => v !== value) : [...arr, value])
   }
+
+  const visibilityCountryKey = form.visibilityType === 'BLOCKED_ONLY' ? 'blockedCountries' : 'allowedCountries'
+
+  const toggleCountry = (code: string) => {
+    const arr = form[visibilityCountryKey] as string[]
+    update(visibilityCountryKey, arr.includes(code) ? arr.filter((c) => c !== code) : [...arr, code])
+  }
+
+  const filteredCountries = ALL_COUNTRIES_LIST.filter(
+    (c) =>
+      c.name.toLowerCase().includes(countrySearch.toLowerCase()) ||
+      c.code.toLowerCase().includes(countrySearch.toLowerCase()),
+  )
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -295,6 +313,94 @@ export default function PlatformForm({ platform, isEdit = false }: PlatformFormP
             </button>
           ))}
         </div>
+      </div>
+
+      {/* Country Visibility */}
+      <div className="bg-[#0f1629] border border-white/10 rounded-xl p-5">
+        <h2 className="text-lg font-bold text-white mb-1 flex items-center gap-2">
+          <Globe size={18} className="text-yellow-400" /> Country Visibility
+        </h2>
+        <p className="text-sm text-gray-500 mb-4">Control which countries can see this platform</p>
+
+        {/* Mode selector */}
+        <div className="space-y-2 mb-5">
+          {([
+            { value: 'ALL_COUNTRIES', icon: Globe,  label: 'Show to all countries (default)' },
+            { value: 'ALLOWED_ONLY',  icon: Target, label: 'Show ONLY to selected countries' },
+            { value: 'BLOCKED_ONLY',  icon: Ban,    label: 'Show to all EXCEPT selected countries' },
+          ] as { value: VisibilityType; icon: typeof Globe; label: string }[]).map(({ value, icon: Icon, label }) => (
+            <label key={value} className="flex items-center gap-3 cursor-pointer group">
+              <input
+                type="radio"
+                name="visibilityType"
+                checked={form.visibilityType === value}
+                onChange={() => update('visibilityType', value)}
+                className="accent-yellow-400 w-4 h-4"
+              />
+              <Icon size={15} className={form.visibilityType === value ? 'text-yellow-400' : 'text-gray-500'} />
+              <span className={`text-sm ${form.visibilityType === value ? 'text-white' : 'text-gray-400'}`}>{label}</span>
+            </label>
+          ))}
+        </div>
+
+        {/* Country selector — shown when ALLOWED_ONLY or BLOCKED_ONLY */}
+        {form.visibilityType !== 'ALL_COUNTRIES' && (
+          <div>
+            <div className="text-sm text-gray-400 mb-3 font-medium">
+              {form.visibilityType === 'ALLOWED_ONLY' ? 'Allowed Countries' : 'Blocked Countries'}
+            </div>
+
+            {/* Selected chips */}
+            {(form[visibilityCountryKey] as string[]).length > 0 && (
+              <div className="flex flex-wrap gap-2 mb-3">
+                {(form[visibilityCountryKey] as string[]).map((code) => {
+                  const c = ALL_COUNTRIES_LIST.find((x) => x.code === code)
+                  return (
+                    <span key={code} className="flex items-center gap-1.5 bg-yellow-400/10 border border-yellow-400/30 text-yellow-300 text-xs px-2.5 py-1 rounded-full">
+                      {c?.flag} {c?.name ?? code}
+                      <button type="button" onClick={() => toggleCountry(code)} className="hover:text-red-400 transition-colors">
+                        <X size={11} />
+                      </button>
+                    </span>
+                  )
+                })}
+              </div>
+            )}
+
+            {/* Search + dropdown */}
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="Search countries..."
+                value={countrySearch}
+                onChange={(e) => setCountrySearch(e.target.value)}
+                className="w-full bg-white/5 border border-white/10 text-white rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-yellow-400 mb-1"
+              />
+              <div className="max-h-48 overflow-y-auto border border-white/10 rounded-lg bg-[#0a0e1a] divide-y divide-white/5">
+                {filteredCountries.map((c) => {
+                  const selected = (form[visibilityCountryKey] as string[]).includes(c.code)
+                  return (
+                    <button
+                      key={c.code}
+                      type="button"
+                      onClick={() => toggleCountry(c.code)}
+                      className={`w-full flex items-center gap-2.5 px-3 py-2 text-sm transition-colors text-left ${
+                        selected
+                          ? 'bg-yellow-400/10 text-yellow-300'
+                          : 'text-gray-300 hover:bg-white/5'
+                      }`}
+                    >
+                      <span>{c.flag}</span>
+                      <span className="flex-1">{c.name}</span>
+                      <span className="text-gray-600 text-xs">{c.code}</span>
+                      {selected && <span className="text-yellow-400 text-xs">✓</span>}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Submit */}

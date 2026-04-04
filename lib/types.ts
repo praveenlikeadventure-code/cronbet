@@ -13,12 +13,17 @@ export function parsePlatform(p: Record<string, unknown>): BettingPlatform {
     cons: parseJsonArray(p.cons),
     sports: parseJsonArray(p.sports),
     payments: parseJsonArray(p.payments),
+    allowedCountries: parseJsonArray(p.allowedCountries),
+    blockedCountries: parseJsonArray(p.blockedCountries),
+    visibilityType: (p.visibilityType as string) || 'ALL_COUNTRIES',
   } as BettingPlatform
 }
 
 export function parsePlatforms(platforms: Record<string, unknown>[]): BettingPlatform[] {
   return platforms.map(parsePlatform)
 }
+
+export type VisibilityType = 'ALL_COUNTRIES' | 'ALLOWED_ONLY' | 'BLOCKED_ONLY'
 
 export interface BettingPlatform {
   id: string
@@ -39,6 +44,9 @@ export interface BettingPlatform {
   rank: number
   isActive: boolean
   description: string | null
+  visibilityType: VisibilityType
+  allowedCountries: string[]
+  blockedCountries: string[]
   createdAt: Date
   updatedAt: Date
 }

@@ -2,6 +2,7 @@
 
 import type { BettingPlatform } from '@/lib/types'
 import { useGeoCurrency } from '@/hooks/useGeoCurrency'
+import { filterPlatformsWithFallback } from '@/lib/filterPlatformsByGeo'
 import GeoDebugBanner from '@/components/GeoDebugBanner'
 import PlatformCard from '@/components/platform/PlatformCard'
 import ComparisonTable from '@/components/platform/ComparisonTable'
@@ -29,9 +30,13 @@ export default function GeoAwarePlatforms({
   const combined = [...initialFeatured, ...initialPlatforms.filter((p) => !initialFeatured.find((f) => f.id === p.id))]
   const { platforms: updatedCombined, geo } = useGeoCurrency(combined)
 
+  // Apply visibility filter once geo is known
+  const { platforms } = (geo && !geo.isDefault)
+    ? filterPlatformsWithFallback(updatedCombined, geo.countryCode)
+    : { platforms: updatedCombined }
+
   const featuredIds = new Set(initialFeatured.map((p) => p.id))
-  const featured = updatedCombined.filter((p) => featuredIds.has(p.id))
-  const platforms = updatedCombined
+  const featured = platforms.filter((p) => featuredIds.has(p.id) && p.isFeatured)
 
   return (
     <>

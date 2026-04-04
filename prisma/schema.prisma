@@ -22,13 +22,17 @@ model BettingPlatform {
   minDeposit   String?
   payoutSpeed  String?
   license      String?
-  isFeatured   Boolean  @default(false)
-  rank         Int      @default(999)
-  isActive     Boolean  @default(true)
-  description  String?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-  geoOffers    PlatformGeoOffer[]
+  isFeatured       Boolean  @default(false)
+  rank             Int      @default(999)
+  isActive         Boolean  @default(true)
+  description      String?
+  // Visibility control: ALL_COUNTRIES | ALLOWED_ONLY | BLOCKED_ONLY
+  visibilityType   String   @default("ALL_COUNTRIES")
+  allowedCountries String   @default("[]")  // JSON array of country codes
+  blockedCountries String   @default("[]")  // JSON array of country codes
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  geoOffers        PlatformGeoOffer[]
 }
 
 // Geo-specific bonus offers per platform per country

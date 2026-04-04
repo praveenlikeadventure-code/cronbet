@@ -15,6 +15,9 @@ interface Platform {
   affiliateUrl: string
   rating: number
   minDeposit: string | null
+  visibilityType?: string
+  allowedCountries?: string[]
+  blockedCountries?: string[]
 }
 
 interface BlogPlatformWidgetProps {
@@ -242,10 +245,23 @@ export default function BlogPlatformWidget({
   blogSlug,
 }: BlogPlatformWidgetProps) {
   const [platform, setPlatform] = useState(initialPlatform)
+  const [hidden, setHidden] = useState(false)
 
   useEffect(() => {
     getGeoCountry().then((country) => {
       if (!country || country === 'DEFAULT') return
+
+      // Check visibility
+      const v = initialPlatform.visibilityType
+      if (v === 'ALLOWED_ONLY' && !initialPlatform.allowedCountries?.includes(country)) {
+        setHidden(true)
+        return
+      }
+      if (v === 'BLOCKED_ONLY' && initialPlatform.blockedCountries?.includes(country)) {
+        setHidden(true)
+        return
+      }
+
       return fetchGeoData(country).then((data) => {
         const d = data[initialPlatform.id]
         if (!d) return
@@ -258,6 +274,8 @@ export default function BlogPlatformWidget({
       })
     })
   }, [initialPlatform.id])
+
+  if (hidden) return null
 
   function handleClaimClick(e: React.MouseEvent) {
     e.preventDefault()

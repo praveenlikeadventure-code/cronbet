@@ -18,6 +18,9 @@ export interface PopupPlatform {
   rating: number
   minDeposit: string | null
   pros: string[]
+  visibilityType?: string
+  allowedCountries?: string[]
+  blockedCountries?: string[]
 }
 
 export interface PopupSettingsData {
@@ -128,22 +131,30 @@ export default function PopupWidgets({ blogId, blogSlug, platforms: initialPlatf
   const scrollListenerAdded = useRef(false)
   const dismissed = useRef(false)
 
-  // Geo update: upgrade platform bonuses after country detection
+  // Geo update: upgrade platform bonuses + filter by visibility after country detection
   useEffect(() => {
     getGeoCountry().then((country) => {
       if (!country || country === 'DEFAULT') return
       return fetchGeoData(country).then((geoData) => {
         setPlatforms((prev) =>
-          prev.map((p) => {
-            const d = geoData[p.id]
-            if (!d) return p
-            return {
-              ...p,
-              bonusText: d.bonusText || p.bonusText,
-              minDeposit: d.minDeposit || p.minDeposit,
-              affiliateUrl: d.affiliateUrl || p.affiliateUrl,
-            }
-          }),
+          prev
+            .filter((p) => {
+              const v = p.visibilityType
+              if (!v || v === 'ALL_COUNTRIES') return true
+              if (v === 'ALLOWED_ONLY') return p.allowedCountries?.includes(country) ?? false
+              if (v === 'BLOCKED_ONLY') return !p.blockedCountries?.includes(country)
+              return true
+            })
+            .map((p) => {
+              const d = geoData[p.id]
+              if (!d) return p
+              return {
+                ...p,
+                bonusText: d.bonusText || p.bonusText,
+                minDeposit: d.minDeposit || p.minDeposit,
+                affiliateUrl: d.affiliateUrl || p.affiliateUrl,
+              }
+            }),
         )
       })
     })

@@ -2,9 +2,10 @@
 
 import { useMemo } from 'react'
 import Image from 'next/image'
-import { ExternalLink, CheckCircle, XCircle } from 'lucide-react'
+import { ExternalLink, CheckCircle, XCircle, AlertTriangle } from 'lucide-react'
 import type { BettingPlatform } from '@/lib/types'
 import { useGeoCurrency } from '@/hooks/useGeoCurrency'
+import { filterPlatformsByGeo } from '@/lib/filterPlatformsByGeo'
 import GeoDebugBanner from '@/components/GeoDebugBanner'
 import StarRating from '@/components/ui/StarRating'
 import PlatformCard from '@/components/platform/PlatformCard'
@@ -30,13 +31,52 @@ export default function GeoAwareReview({ initialPlatform, initialRelated }: GeoA
   const { platforms: allUpdated, geo } = useGeoCurrency(initialAll)
 
   const platform = allUpdated[0]
-  const related = allUpdated.slice(1)
+  const rawRelated = allUpdated.slice(1)
+
+  // Filter related platforms by geo visibility
+  const related = (geo && !geo.isDefault)
+    ? filterPlatformsByGeo(rawRelated, geo.countryCode)
+    : rawRelated
+
+  // Check if the main platform is visible for this country
+  const platformHidden = geo && !geo.isDefault && (() => {
+    const v = platform.visibilityType
+    if (v === 'ALLOWED_ONLY') return !platform.allowedCountries.includes(geo.countryCode)
+    if (v === 'BLOCKED_ONLY') return platform.blockedCountries.includes(geo.countryCode)
+    return false
+  })()
 
   const ratingValues: Record<string, number> = {
     uiux: Math.min(5, platform.rating + 0.1),
     bonuses: Math.min(5, platform.rating + 0.2),
     sports: Math.min(5, platform.rating - 0.1),
     payments: Math.min(5, platform.rating),
+  }
+
+  if (platformHidden) {
+    return (
+      <>
+        <GeoDebugBanner geo={geo} />
+        <div className="bg-[#0f1629] border border-yellow-400/20 rounded-xl p-8 text-center">
+          <AlertTriangle size={40} className="text-yellow-400 mx-auto mb-4" />
+          <h2 className="text-xl font-bold text-white mb-2">Not Available in Your Region</h2>
+          <p className="text-gray-400 mb-6">
+            {platform.name} is not available for users in your country.
+          </p>
+          <a href="/compare" className="bg-yellow-400 hover:bg-yellow-300 text-black font-bold px-6 py-2.5 rounded-xl transition-colors">
+            View Available Platforms
+          </a>
+        </div>
+        {related.length > 0 && (
+          <section className="mt-8">
+            <h2 className="text-2xl font-bold text-white mb-5">Available in Your Region</h2>
+            <div className="space-y-4">
+              {related.map((p) => <PlatformCard key={p.id} platform={p} showBadge={false} />)}
+            </div>
+          </section>
+        )}
+      </>
+    )
   }
 
   return (

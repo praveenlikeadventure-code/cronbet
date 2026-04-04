@@ -34,6 +34,7 @@ export default async function AdminPlatformsPage() {
                 <th className="text-left py-3 px-4 text-gray-400 hidden md:table-cell">Bonus</th>
                 <th className="text-left py-3 px-4 text-gray-400">Rating</th>
                 <th className="text-left py-3 px-4 text-gray-400">Status</th>
+                <th className="text-left py-3 px-4 text-gray-400 hidden lg:table-cell">Visibility</th>
                 <th className="text-left py-3 px-4 text-gray-400">Featured</th>
                 <th className="text-left py-3 px-4 text-gray-400">Actions</th>
               </tr>
@@ -49,6 +50,22 @@ export default async function AdminPlatformsPage() {
                     <span className={`text-xs px-2 py-0.5 rounded-full ${p.isActive ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
                       {p.isActive ? 'Active' : 'Inactive'}
                     </span>
+                  </td>
+                  <td className="py-3 px-4 hidden lg:table-cell">
+                    {(() => {
+                      const vType = p.visibilityType || 'ALL_COUNTRIES'
+                      if (vType === 'ALL_COUNTRIES') {
+                        return <span className="text-xs text-gray-400">🌍 All</span>
+                      }
+                      if (vType === 'ALLOWED_ONLY') {
+                        const count = (() => { try { return JSON.parse(p.allowedCountries || '[]').length } catch { return 0 } })()
+                        return <span className="text-xs bg-blue-500/10 text-blue-400 px-2 py-0.5 rounded-full">🎯 {count} allowed</span>
+                      }
+                      if (vType === 'BLOCKED_ONLY') {
+                        const count = (() => { try { return JSON.parse(p.blockedCountries || '[]').length } catch { return 0 } })()
+                        return <span className="text-xs bg-red-500/10 text-red-400 px-2 py-0.5 rounded-full">🚫 {count} blocked</span>
+                      }
+                    })()}
                   </td>
                   <td className="py-3 px-4">
                     <span className={`text-xs px-2 py-0.5 rounded-full ${p.isFeatured ? 'bg-yellow-400/20 text-yellow-400' : 'bg-white/5 text-gray-500'}`}>
