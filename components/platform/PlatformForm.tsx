@@ -86,27 +86,37 @@ export default function PlatformForm({ platform, isEdit = false }: PlatformFormP
       c.code.toLowerCase().includes(countrySearch.toLowerCase()),
   )
 
-  // --- Logo upload ---
-  async function handleLogoUpload(e: React.ChangeEvent<HTMLInputElement>) {
+  // --- Logo upload — converts to base64 client-side so it persists in DB across deployments ---
+  function handleLogoUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
+
+    if (file.size > 2 * 1024 * 1024) {
+      setLogoError('Image must be under 2MB')
+      e.target.value = ''
+      return
+    }
+    const validTypes = ['image/png', 'image/jpeg', 'image/svg+xml', 'image/webp']
+    if (!validTypes.includes(file.type)) {
+      setLogoError('Use PNG, JPG, SVG, or WEBP')
+      e.target.value = ''
+      return
+    }
+
     setLogoError('')
     setLogoUploading(true)
-    try {
-      const fd = new FormData()
-      fd.append('file', file)
-      const res = await fetch('/api/logos/upload', { method: 'POST', body: fd })
-      const json = await res.json()
-      if (res.ok) {
-        update('logo', json.url)
-      } else {
-        setLogoError(json.error || 'Upload failed')
-      }
-    } catch {
-      setLogoError('Upload failed')
-    } finally {
+
+    const reader = new FileReader()
+    reader.onload = () => {
+      update('logo', reader.result as string)
       setLogoUploading(false)
     }
+    reader.onerror = () => {
+      setLogoError('Failed to read file')
+      setLogoUploading(false)
+    }
+    reader.readAsDataURL(file)
+    e.target.value = '' // reset so same file can be re-selected
   }
 
   // --- Logo AI generate ---
@@ -224,7 +234,7 @@ export default function PlatformForm({ platform, isEdit = false }: PlatformFormP
               )}
 
               {/* Action buttons */}
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-2 items-center">
                 <button
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
@@ -232,7 +242,7 @@ export default function PlatformForm({ platform, isEdit = false }: PlatformFormP
                   className="flex items-center gap-1.5 bg-white/10 hover:bg-white/20 disabled:opacity-50 text-white text-sm px-3 py-2 rounded-lg transition-colors"
                 >
                   <Upload size={14} />
-                  {logoUploading ? 'Uploading...' : 'Upload Logo'}
+                  {logoUploading ? 'Reading...' : 'Upload Logo'}
                 </button>
                 <button
                   type="button"
@@ -243,6 +253,7 @@ export default function PlatformForm({ platform, isEdit = false }: PlatformFormP
                   <Sparkles size={14} />
                   {logoGenerating ? 'Generating...' : 'Generate with AI'}
                 </button>
+                <span className="text-xs text-gray-600">PNG, JPG, SVG, WEBP · max 2MB · saved as base64</span>
                 <input
                   ref={fileInputRef}
                   type="file"
@@ -252,15 +263,18 @@ export default function PlatformForm({ platform, isEdit = false }: PlatformFormP
                 />
               </div>
 
-              {/* Manual URL fallback */}
+              {/* Manual URL input with live preview */}
               <div>
-                <label className="block text-xs text-gray-500 mb-1">Or paste URL directly</label>
+                <label className="block text-xs text-gray-500 mb-1">Or paste image URL</label>
                 <input
-                  value={form.logo}
+                  value={form.logo.startsWith('data:') ? '' : form.logo}
                   onChange={(e) => update('logo', e.target.value)}
-                  placeholder="https://..."
+                  placeholder="https://example.com/logo.png"
                   className="w-full bg-white/5 border border-white/10 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-yellow-400"
                 />
+                {form.logo && !form.logo.startsWith('data:') && (
+                  <p className="text-xs text-gray-600 mt-1">Preview shown above — if the image doesn&apos;t appear, the URL may be broken.</p>
+                )}
               </div>
 
               {logoError && <p className="text-red-400 text-xs">{logoError}</p>}
