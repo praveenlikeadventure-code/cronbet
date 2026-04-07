@@ -1,8 +1,8 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { Globe, PlusCircle, Trash2, Save, CheckCircle, Edit, X } from 'lucide-react'
-import { COUNTRIES } from '@/lib/geo-data'
+import { Globe, PlusCircle, Trash2, Save, CheckCircle, Edit, X, AlertTriangle } from 'lucide-react'
+import { ALL_COUNTRIES_LIST, ALL_COUNTRY_META } from '@/lib/geo-data'
 
 interface GeoOffer {
   id: string
@@ -17,10 +17,6 @@ interface GeoOffer {
   isActive: boolean
 }
 
-const COUNTRY_META = Object.fromEntries(
-  COUNTRIES.map((c) => [c.code, { flag: c.flag, currency: c.currency, symbol: c.symbol, name: c.name }])
-)
-
 const blank: Omit<GeoOffer, 'id'> = {
   countryCode: 'IN',
   countryName: 'India',
@@ -33,7 +29,29 @@ const blank: Omit<GeoOffer, 'id'> = {
   isActive: true,
 }
 
-export default function GeoOffersManager({ platformId, platformAffiliateUrl }: { platformId: string; platformAffiliateUrl: string }) {
+// Country search state
+type CountryOption = { code: string; name: string; flag: string; currency: string; symbol: string }
+
+// DEFAULT entry for the dropdown
+const DEFAULT_OPT: CountryOption = { code: 'DEFAULT', name: 'Default/International', flag: '🌍', currency: 'USD', symbol: '$' }
+
+// All countries for the dropdown (mutable copy so we can sort)
+const GEO_COUNTRY_OPTS: CountryOption[] = [
+  DEFAULT_OPT,
+  ...ALL_COUNTRIES_LIST.map((c) => ({ code: c.code, name: c.name, flag: c.flag, currency: c.currency, symbol: c.symbol })),
+]
+
+export default function GeoOffersManager({
+  platformId,
+  platformAffiliateUrl,
+  visibilityType,
+  allowedCountries,
+}: {
+  platformId: string
+  platformAffiliateUrl: string
+  visibilityType?: string
+  allowedCountries?: string[]
+}) {
   const [offers, setOffers] = useState<GeoOffer[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
@@ -41,6 +59,7 @@ export default function GeoOffersManager({ platformId, platformAffiliateUrl }: {
   const [form, setForm] = useState(blank)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
+  const [countrySearch, setCountrySearch] = useState('')
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -54,17 +73,23 @@ export default function GeoOffersManager({ platformId, platformAffiliateUrl }: {
   function openAdd() {
     setForm({ ...blank, affiliateUrl: platformAffiliateUrl })
     setEditingId(null)
+    setCountrySearch('')
     setShowForm(true)
   }
 
   function openEdit(o: GeoOffer) {
     setForm({ ...o })
     setEditingId(o.id)
+    setCountrySearch('')
     setShowForm(true)
   }
 
   function applyCountryMeta(code: string) {
-    const meta = COUNTRY_META[code]
+    if (code === 'DEFAULT') {
+      setForm((f) => ({ ...f, countryCode: 'DEFAULT', countryName: 'Default/International', currencyCode: 'USD', currencySymbol: '$' }))
+      return
+    }
+    const meta = ALL_COUNTRY_META[code]
     if (meta) {
       setForm((f) => ({
         ...f,
@@ -111,9 +136,25 @@ export default function GeoOffersManager({ platformId, platformAffiliateUrl }: {
     await load()
   }
 
-  const countryOpts = COUNTRIES.filter((c) => c.code !== 'DEFAULT')
-  const defaultOpts = COUNTRIES.filter((c) => c.code === 'DEFAULT')
-  const allOpts = [...defaultOpts, ...countryOpts]
+  // FIX 4: check if a geo offer country is invisible to users
+  function isCountryBlocked(code: string): boolean {
+    if (code === 'DEFAULT') return false
+    if (!visibilityType || visibilityType === 'ALL_COUNTRIES') return false
+    if (visibilityType === 'ALLOWED_ONLY') {
+      return !(allowedCountries ?? []).includes(code)
+    }
+    return false
+  }
+
+  // Filtered options for country search in form
+  const filteredOpts = GEO_COUNTRY_OPTS.filter(
+    (c) =>
+      c.name.toLowerCase().includes(countrySearch.toLowerCase()) ||
+      c.code.toLowerCase().includes(countrySearch.toLowerCase()) ||
+      c.currency.toLowerCase().includes(countrySearch.toLowerCase()),
+  )
+
+  const selectedCountryOpt = GEO_COUNTRY_OPTS.find((c) => c.code === form.countryCode)
 
   return (
     <div className="bg-[#0f1629] border border-white/10 rounded-xl p-5 mt-6">
@@ -154,15 +195,24 @@ export default function GeoOffersManager({ platformId, platformAffiliateUrl }: {
               </tr>
             </thead>
             <tbody>
-              {/* DEFAULT first */}
               {[...offers].sort((a, b) => (a.countryCode === 'DEFAULT' ? -1 : b.countryCode === 'DEFAULT' ? 1 : 0)).map((o) => {
-                const meta = COUNTRY_META[o.countryCode]
-                const flag = meta?.flag ?? '🌍'
+                const meta = ALL_COUNTRY_META[o.countryCode]
+                const flag = meta?.flag ?? (o.countryCode === 'DEFAULT' ? '🌍' : '🏳')
+                const blocked = isCountryBlocked(o.countryCode)
                 return (
                   <tr key={o.id} className={`border-b border-white/5 hover:bg-white/2 ${o.countryCode === 'DEFAULT' ? 'bg-yellow-400/3' : ''}`}>
                     <td className="py-2 px-3 text-white font-medium">
                       <span className="mr-1">{flag}</span>
                       {o.countryCode === 'DEFAULT' ? 'Default (USD)' : o.countryName}
+                      {/* FIX 4: warning if offer country is not visible */}
+                      {blocked && (
+                        <span
+                          title="This country has a geo offer but cannot see the platform. Add it to Allowed Countries in the form above."
+                          className="ml-1.5 inline-flex items-center gap-0.5 text-orange-400 text-[10px] bg-orange-400/10 border border-orange-400/30 px-1.5 py-0.5 rounded-full cursor-help"
+                        >
+                          <AlertTriangle size={9} /> hidden
+                        </span>
+                      )}
                     </td>
                     <td className="py-2 px-3 text-yellow-400 font-semibold">{o.bonusText}</td>
                     <td className="py-2 px-3 text-gray-400 hidden sm:table-cell">{o.minDeposit || '—'}</td>
@@ -202,18 +252,57 @@ export default function GeoOffersManager({ platformId, platformAffiliateUrl }: {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {/* Country */}
+            {/* Country — searchable dropdown */}
             <div className="sm:col-span-2">
               <label className="block text-xs text-gray-400 mb-1">Country</label>
-              <select
-                value={form.countryCode}
-                onChange={(e) => applyCountryMeta(e.target.value)}
-                className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-yellow-400/50"
-              >
-                {allOpts.map((c) => (
-                  <option key={c.code} value={c.code}>{c.flag} {c.name} ({c.code}) — {c.currency}</option>
+
+              {/* Selected country chip */}
+              {selectedCountryOpt && (
+                <div className="flex items-center gap-2 mb-2 bg-yellow-400/10 border border-yellow-400/20 rounded-lg px-3 py-2 text-sm text-yellow-300">
+                  <span>{selectedCountryOpt.flag}</span>
+                  <span className="font-medium">{selectedCountryOpt.name}</span>
+                  <span className="text-xs text-gray-400 ml-1">({selectedCountryOpt.currency} {selectedCountryOpt.symbol})</span>
+                </div>
+              )}
+
+              {/* FIX 4: warn if selected country is blocked */}
+              {isCountryBlocked(form.countryCode) && (
+                <div className="flex items-center gap-2 mb-2 bg-orange-400/10 border border-orange-400/30 rounded-lg px-3 py-2 text-xs text-orange-300">
+                  <AlertTriangle size={12} />
+                  <span>
+                    ⚠️ This country has a geo offer but cannot see the platform.
+                    Add <strong>{selectedCountryOpt?.name}</strong> to Allowed Countries in the platform settings.
+                  </span>
+                </div>
+              )}
+
+              <input
+                type="text"
+                placeholder="Search country, code, or currency..."
+                value={countrySearch}
+                onChange={(e) => setCountrySearch(e.target.value)}
+                className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-yellow-400/50 mb-1"
+              />
+              <div className="max-h-40 overflow-y-auto border border-white/10 rounded-lg bg-[#0a0e1a] divide-y divide-white/5">
+                {filteredOpts.map((c) => (
+                  <button
+                    key={c.code}
+                    type="button"
+                    onClick={() => { applyCountryMeta(c.code); setCountrySearch('') }}
+                    className={`w-full flex items-center gap-2 px-3 py-2 text-xs transition-colors text-left ${
+                      form.countryCode === c.code
+                        ? 'bg-yellow-400/10 text-yellow-300'
+                        : 'text-gray-300 hover:bg-white/5'
+                    }`}
+                  >
+                    <span>{c.flag}</span>
+                    <span className="flex-1">{c.name}</span>
+                    <span className="text-gray-500">{c.code}</span>
+                    <span className="text-gray-600 ml-1">{c.currency} {c.symbol}</span>
+                    {form.countryCode === c.code && <span className="text-yellow-400">✓</span>}
+                  </button>
                 ))}
-              </select>
+              </div>
             </div>
 
             {/* Bonus text */}
@@ -271,7 +360,10 @@ export default function GeoOffersManager({ platformId, platformAffiliateUrl }: {
 
             {/* Affiliate URL */}
             <div className="sm:col-span-2">
-              <label className="block text-xs text-gray-400 mb-1">Affiliate URL (leave blank to use platform default)</label>
+              <label className="block text-xs text-gray-400 mb-1">
+                Affiliate URL (geo-specific)
+                <span className="ml-1 text-gray-600">— leave blank to use platform default</span>
+              </label>
               <input
                 value={form.affiliateUrl}
                 onChange={(e) => setForm((f) => ({ ...f, affiliateUrl: e.target.value }))}

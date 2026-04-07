@@ -1,8 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import { PlusCircle, X, Globe, Target, Ban } from 'lucide-react'
+import { PlusCircle, X, Globe, Target, Ban, Upload, Sparkles, Image } from 'lucide-react'
 import { BettingPlatform, VisibilityType } from '@/lib/types'
 import { ALL_COUNTRIES_LIST } from '@/lib/geo-data'
 
@@ -40,6 +40,12 @@ export default function PlatformForm({ platform, isEdit = false }: PlatformFormP
     blockedCountries: platform?.blockedCountries || [] as string[],
   })
   const [countrySearch, setCountrySearch] = useState('')
+  const [logoUploading, setLogoUploading] = useState(false)
+  const [logoGenerating, setLogoGenerating] = useState(false)
+  const [logoError, setLogoError] = useState('')
+  // FIX 4: track suggestion banners
+  const [geoSuggestion, setGeoSuggestion] = useState<string | null>(null)   // country code suggestion from visibility
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const update = (key: string, value: unknown) => setForm((f) => ({ ...f, [key]: value }))
 
@@ -62,9 +68,16 @@ export default function PlatformForm({ platform, isEdit = false }: PlatformFormP
 
   const visibilityCountryKey = form.visibilityType === 'BLOCKED_ONLY' ? 'blockedCountries' : 'allowedCountries'
 
+  // FIX 4: when adding to ALLOWED_ONLY, suggest geo offer
   const toggleCountry = (code: string) => {
     const arr = form[visibilityCountryKey] as string[]
-    update(visibilityCountryKey, arr.includes(code) ? arr.filter((c) => c !== code) : [...arr, code])
+    const willAdd = !arr.includes(code)
+    update(visibilityCountryKey, willAdd ? [...arr, code] : arr.filter((c) => c !== code))
+    if (willAdd && form.visibilityType === 'ALLOWED_ONLY') {
+      const country = ALL_COUNTRIES_LIST.find((c) => c.code === code)
+      setGeoSuggestion(country ? `${country.flag} ${country.name}` : code)
+      setTimeout(() => setGeoSuggestion(null), 6000)
+    }
   }
 
   const filteredCountries = ALL_COUNTRIES_LIST.filter(
@@ -72,6 +85,56 @@ export default function PlatformForm({ platform, isEdit = false }: PlatformFormP
       c.name.toLowerCase().includes(countrySearch.toLowerCase()) ||
       c.code.toLowerCase().includes(countrySearch.toLowerCase()),
   )
+
+  // --- Logo upload ---
+  async function handleLogoUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setLogoError('')
+    setLogoUploading(true)
+    try {
+      const fd = new FormData()
+      fd.append('file', file)
+      const res = await fetch('/api/logos/upload', { method: 'POST', body: fd })
+      const json = await res.json()
+      if (res.ok) {
+        update('logo', json.url)
+      } else {
+        setLogoError(json.error || 'Upload failed')
+      }
+    } catch {
+      setLogoError('Upload failed')
+    } finally {
+      setLogoUploading(false)
+    }
+  }
+
+  // --- Logo AI generate ---
+  async function handleLogoGenerate() {
+    if (!form.name) {
+      setLogoError('Enter the platform name first')
+      return
+    }
+    setLogoError('')
+    setLogoGenerating(true)
+    try {
+      const res = await fetch('/api/logos/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ platformName: form.name }),
+      })
+      const json = await res.json()
+      if (res.ok) {
+        update('logo', json.url)
+      } else {
+        setLogoError(json.error || 'Generation failed')
+      }
+    } catch {
+      setLogoError('Generation failed')
+    } finally {
+      setLogoGenerating(false)
+    }
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -128,15 +191,82 @@ export default function PlatformForm({ platform, isEdit = false }: PlatformFormP
               className="w-full bg-white/5 border border-white/10 text-white rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-yellow-400"
             />
           </div>
-          <div>
-            <label className="block text-sm text-gray-400 mb-1.5">Logo URL</label>
-            <input
-              value={form.logo}
-              onChange={(e) => update('logo', e.target.value)}
-              placeholder="https://..."
-              className="w-full bg-white/5 border border-white/10 text-white rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-yellow-400"
-            />
+
+          {/* FIX 1: Logo upload widget — full-width */}
+          <div className="sm:col-span-2">
+            <label className="block text-sm text-gray-400 mb-1.5">Platform Logo</label>
+            <div className="bg-white/3 border border-white/10 rounded-xl p-4 space-y-3">
+              {/* Preview */}
+              {form.logo && (
+                <div className="flex items-center gap-3">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={form.logo}
+                    alt="Logo preview"
+                    className="w-16 h-16 rounded-lg object-contain bg-white/5 border border-white/10 p-1"
+                    onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
+                  />
+                  <span className="text-xs text-gray-500 break-all flex-1">{form.logo}</span>
+                  <button
+                    type="button"
+                    onClick={() => update('logo', '')}
+                    className="text-red-400 hover:text-red-300 p-1 shrink-0"
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
+              )}
+
+              {!form.logo && (
+                <div className="flex items-center justify-center w-16 h-16 rounded-lg bg-white/5 border border-dashed border-white/20">
+                  <Image size={22} className="text-gray-600" />
+                </div>
+              )}
+
+              {/* Action buttons */}
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={logoUploading}
+                  className="flex items-center gap-1.5 bg-white/10 hover:bg-white/20 disabled:opacity-50 text-white text-sm px-3 py-2 rounded-lg transition-colors"
+                >
+                  <Upload size={14} />
+                  {logoUploading ? 'Uploading...' : 'Upload Logo'}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleLogoGenerate}
+                  disabled={logoGenerating}
+                  className="flex items-center gap-1.5 bg-purple-500/20 hover:bg-purple-500/30 disabled:opacity-50 text-purple-300 border border-purple-500/30 text-sm px-3 py-2 rounded-lg transition-colors"
+                >
+                  <Sparkles size={14} />
+                  {logoGenerating ? 'Generating...' : 'Generate with AI'}
+                </button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".png,.jpg,.jpeg,.svg,.webp,image/png,image/jpeg,image/svg+xml,image/webp"
+                  className="hidden"
+                  onChange={handleLogoUpload}
+                />
+              </div>
+
+              {/* Manual URL fallback */}
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">Or paste URL directly</label>
+                <input
+                  value={form.logo}
+                  onChange={(e) => update('logo', e.target.value)}
+                  placeholder="https://..."
+                  className="w-full bg-white/5 border border-white/10 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-yellow-400"
+                />
+              </div>
+
+              {logoError && <p className="text-red-400 text-xs">{logoError}</p>}
+            </div>
           </div>
+
           <div>
             <label className="block text-sm text-gray-400 mb-1.5">Affiliate URL *</label>
             <input
@@ -342,6 +472,21 @@ export default function PlatformForm({ platform, isEdit = false }: PlatformFormP
             </label>
           ))}
         </div>
+
+        {/* FIX 4: suggestion banner when a country is added to ALLOWED_ONLY */}
+        {geoSuggestion && (
+          <div className="flex items-start gap-2 bg-blue-500/10 border border-blue-500/30 rounded-lg px-3 py-2.5 mb-4 text-sm text-blue-300">
+            <span className="mt-0.5">💡</span>
+            <span>
+              <strong>{geoSuggestion}</strong> added to allowed countries.{' '}
+              Would you like to add a geo-specific offer for this country?{' '}
+              <span className="text-gray-400">(Scroll down to Geo-Specific Offers after saving)</span>
+            </span>
+            <button type="button" onClick={() => setGeoSuggestion(null)} className="ml-auto text-gray-500 hover:text-white shrink-0">
+              <X size={13} />
+            </button>
+          </div>
+        )}
 
         {/* Country selector — shown when ALLOWED_ONLY or BLOCKED_ONLY */}
         {form.visibilityType !== 'ALL_COUNTRIES' && (

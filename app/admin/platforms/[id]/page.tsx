@@ -27,7 +27,12 @@ export default async function EditPlatformPage({ params }: { params: { id: strin
           <h1 className="text-2xl font-extrabold text-white">Edit: {platform.name}</h1>
         </div>
         <PlatformForm platform={platform} isEdit />
-        <GeoOffersManager platformId={platform.id} platformAffiliateUrl={platform.affiliateUrl} />
+        <GeoOffersManager
+          platformId={platform.id}
+          platformAffiliateUrl={platform.affiliateUrl}
+          visibilityType={platform.visibilityType}
+          allowedCountries={platform.allowedCountries}
+        />
       </div>
     </div>
   )
