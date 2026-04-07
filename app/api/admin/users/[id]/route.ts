@@ -37,6 +37,12 @@ export async function DELETE(req: Request, { params }: { params: { id: string } 
     return NextResponse.json({ error: 'Cannot delete your own account' }, { status: 400 })
   }
 
+  // Prevent deleting the last admin user
+  const adminCount = await prisma.adminUser.count()
+  if (adminCount <= 1) {
+    return NextResponse.json({ error: 'Cannot delete the last admin user' }, { status: 400 })
+  }
+
   await prisma.adminUser.delete({ where: { id: params.id } })
   return NextResponse.json({ success: true })
 }

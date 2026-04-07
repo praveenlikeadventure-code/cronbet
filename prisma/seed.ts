@@ -4,24 +4,18 @@ import bcrypt from 'bcryptjs'
 const prisma = new PrismaClient()
 
 async function main() {
-  // Safety guard: skip seed entirely if the database already has data.
-  // This prevents any accidental data loss if seed is ever run on a live server.
-  const existingPlatforms = await prisma.bettingPlatform.count()
-  if (existingPlatforms > 0) {
-    console.log(`⏭️  Database already has ${existingPlatforms} platform(s) — skipping seed to protect existing data.`)
-    return
-  }
-  console.log('🌱 Empty database detected, running seed...')
+  // Each model is checked independently — no single early-exit controls all.
+  // This means admins can never be wiped even if platforms table is somehow empty.
 
-  // Create admin user
-  const existingAdmins = await prisma.adminUser.count()
-  if (existingAdmins > 0) {
-    console.log('⏭️  Admin user already exists — skipping.')
+  // --- Admin users ---
+  const adminCount = await prisma.adminUser.count()
+  if (adminCount > 0) {
+    console.log(`⏭️  Skipping admin seed — ${adminCount} user(s) already exist.`)
   } else {
     const passwordHash = await bcrypt.hash('Admin@123', 12)
     await prisma.adminUser.upsert({
       where: { email: 'admin@cronbet.com' },
-      update: {},
+      update: {}, // never overwrite
       create: {
         email: 'admin@cronbet.com',
         name: 'Super Admin',
@@ -29,8 +23,16 @@ async function main() {
         role: 'SUPER_ADMIN',
       },
     })
-    console.log('✅ Admin user created.')
+    console.log('✅ Default admin user created.')
   }
+
+  // --- Platforms ---
+  const platformCount = await prisma.bettingPlatform.count()
+  if (platformCount > 0) {
+    console.log(`⏭️  Skipping platform seed — ${platformCount} platform(s) already exist.`)
+    return // no need to run the rest if platforms exist
+  }
+  console.log('🌱 No platforms found — seeding platforms and sample content...')
 
   // Seed betting platforms
   const platforms = [
