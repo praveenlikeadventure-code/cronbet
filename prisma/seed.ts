@@ -4,18 +4,33 @@ import bcrypt from 'bcryptjs'
 const prisma = new PrismaClient()
 
 async function main() {
+  // Safety guard: skip seed entirely if the database already has data.
+  // This prevents any accidental data loss if seed is ever run on a live server.
+  const existingPlatforms = await prisma.bettingPlatform.count()
+  if (existingPlatforms > 0) {
+    console.log(`⏭️  Database already has ${existingPlatforms} platform(s) — skipping seed to protect existing data.`)
+    return
+  }
+  console.log('🌱 Empty database detected, running seed...')
+
   // Create admin user
-  const passwordHash = await bcrypt.hash('Admin@123', 12)
-  await prisma.adminUser.upsert({
-    where: { email: 'admin@cronbet.com' },
-    update: {},
-    create: {
-      email: 'admin@cronbet.com',
-      name: 'Super Admin',
-      passwordHash,
-      role: 'SUPER_ADMIN',
-    },
-  })
+  const existingAdmins = await prisma.adminUser.count()
+  if (existingAdmins > 0) {
+    console.log('⏭️  Admin user already exists — skipping.')
+  } else {
+    const passwordHash = await bcrypt.hash('Admin@123', 12)
+    await prisma.adminUser.upsert({
+      where: { email: 'admin@cronbet.com' },
+      update: {},
+      create: {
+        email: 'admin@cronbet.com',
+        name: 'Super Admin',
+        passwordHash,
+        role: 'SUPER_ADMIN',
+      },
+    })
+    console.log('✅ Admin user created.')
+  }
 
   // Seed betting platforms
   const platforms = [
@@ -193,7 +208,7 @@ async function main() {
     }
     await prisma.bettingPlatform.upsert({
       where: { slug: platform.slug },
-      update: data,
+      update: {}, // never overwrite existing platform data
       create: data,
     })
   }
@@ -201,7 +216,7 @@ async function main() {
   // Seed sample blog posts
   await prisma.blogPost.upsert({
     where: { slug: 'best-betting-sites-2024' },
-    update: {},
+    update: {}, // never overwrite existing blog posts
     create: {
       title: 'Best Betting Sites in 2024: Our Top Picks',
       slug: 'best-betting-sites-2024',
