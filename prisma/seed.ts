@@ -4,11 +4,23 @@ import bcrypt from 'bcryptjs'
 const prisma = new PrismaClient()
 
 async function main() {
-  // Each model is checked independently — no single early-exit controls all.
-  // This means admins can never be wiped even if platforms table is somehow empty.
+  // SAFETY CHECK - Never overwrite existing data
+  const platformCount = await prisma.bettingPlatform.count()
+  const adminCount = await prisma.adminUser.count()
+  const geoCount = await prisma.platformGeoOffer.count()
+
+  if (platformCount > 0 || adminCount > 0 || geoCount > 0) {
+    console.log('=== DATABASE HAS EXISTING DATA - SKIPPING SEED ===')
+    console.log(`Platforms: ${platformCount}`)
+    console.log(`Admins: ${adminCount}`)
+    console.log(`Geo offers: ${geoCount}`)
+    console.log('=== SEED SKIPPED SAFELY ===')
+    return // EXIT immediately - don't touch anything
+  }
+
+  console.log('Empty database - running initial seed...')
 
   // --- Admin users ---
-  const adminCount = await prisma.adminUser.count()
   if (adminCount > 0) {
     console.log(`⏭️  Skipping admin seed — ${adminCount} user(s) already exist.`)
   } else {
@@ -27,11 +39,6 @@ async function main() {
   }
 
   // --- Platforms ---
-  const platformCount = await prisma.bettingPlatform.count()
-  if (platformCount > 0) {
-    console.log(`⏭️  Skipping platform seed — ${platformCount} platform(s) already exist.`)
-    return // no need to run the rest if platforms exist
-  }
   console.log('🌱 No platforms found — seeding platforms and sample content...')
 
   // Seed betting platforms
