@@ -96,13 +96,16 @@ function CompactCard({
         <Stars rating={platform.rating} />
         <div className="text-[#f5a623] font-semibold text-xs mt-0.5 truncate">{platform.bonusText || 'See Offer'}</div>
       </div>
-      <button
-        onClick={onClaim}
+      <a
+        href={platform.affiliateUrl}
+        target="_blank"
+        rel="noopener noreferrer nofollow sponsored"
+        onClick={(e) => { e.stopPropagation(); onClaim(); }}
         className="bg-[#22c55e] hover:bg-green-400 text-white font-bold px-3 py-2 rounded-lg text-xs flex items-center gap-1 transition-colors shrink-0"
       >
         <ExternalLink size={11} />
         Claim
-      </button>
+      </a>
     </div>
   )
 }
@@ -281,7 +284,6 @@ export default function PopupWidgets({ blogId, blogSlug, platforms: initialPlatf
 
   function handleClaim(platform: PopupPlatform) {
     trackAction(null, platform, 'claimed', activePopup)
-    window.open(platform.affiliateUrl, '_blank', 'noopener,noreferrer,nofollow')
     closePopup()
   }
 
@@ -353,13 +355,16 @@ export default function PopupWidgets({ blogId, blogSlug, platforms: initialPlatf
             ))}
 
             {/* CTA */}
-            <button
-              onClick={() => handleClaim(primaryPlatform)}
+            <a
+              href={primaryPlatform.affiliateUrl}
+              target="_blank"
+              rel="noopener noreferrer nofollow sponsored"
+              onClick={(e) => { e.stopPropagation(); handleClaim(primaryPlatform); }}
               className="w-full mt-3 bg-[#22c55e] hover:bg-green-400 text-white font-bold py-2.5 rounded-xl text-sm flex items-center justify-center gap-2 transition-colors"
             >
               <Gift size={14} />
               Claim Bonus Now
-            </button>
+            </a>
           </div>
 
           {/* Footer */}
@@ -492,13 +497,16 @@ export default function PopupWidgets({ blogId, blogSlug, platforms: initialPlatf
               </div>
             ))}
 
-            <button
-              onClick={() => handleClaim(primaryPlatform)}
+            <a
+              href={primaryPlatform.affiliateUrl}
+              target="_blank"
+              rel="noopener noreferrer nofollow sponsored"
+              onClick={(e) => { e.stopPropagation(); handleClaim(primaryPlatform); }}
               className="w-full mt-3 bg-[#22c55e] hover:bg-green-400 text-white font-bold py-2.5 rounded-xl text-sm flex items-center justify-center gap-2 transition-colors"
             >
               <ExternalLink size={13} />
               Claim Bonus
-            </button>
+            </a>
           </div>
 
           <div className="px-4 pb-3">

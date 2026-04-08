@@ -108,13 +108,16 @@ function BannerWidget({
 
         {/* CTAs */}
         <div className="flex flex-col sm:flex-row gap-2 min-w-[150px]">
-          <button
+          <a
+            href={platform.affiliateUrl}
+            target="_blank"
+            rel="noopener noreferrer nofollow sponsored"
             onClick={onClaim}
             className="bg-[#22c55e] hover:bg-green-400 text-white font-bold px-4 py-2.5 rounded-lg text-sm flex items-center justify-center gap-1.5 transition-colors"
           >
             <ExternalLink size={13} />
             Claim Bonus
-          </button>
+          </a>
           <Link
             href={`/review/${platform.slug}`}
             className="bg-white/10 hover:bg-white/20 text-white text-sm font-medium px-4 py-2.5 rounded-lg text-center transition-colors"
@@ -179,13 +182,16 @@ function SidebarWidget({
       )}
 
       {/* CTAs */}
-      <button
+      <a
+        href={platform.affiliateUrl}
+        target="_blank"
+        rel="noopener noreferrer nofollow sponsored"
         onClick={onClaim}
         className="w-full bg-[#22c55e] hover:bg-green-400 text-white font-bold px-3 py-2 rounded-lg text-sm flex items-center justify-center gap-1.5 transition-colors mb-2"
       >
         <ExternalLink size={12} />
         Claim Bonus
-      </button>
+      </a>
       <Link
         href={`/review/${platform.slug}`}
         className="block w-full bg-white/10 hover:bg-white/20 text-white text-xs font-medium px-3 py-2 rounded-lg text-center transition-colors"
@@ -222,13 +228,16 @@ function MiniWidget({
         </div>
         <div className="text-[#f5a623] text-xs font-semibold">{platform.bonusText || 'See Offer'}</div>
       </div>
-      <button
+      <a
+        href={platform.affiliateUrl}
+        target="_blank"
+        rel="noopener noreferrer nofollow sponsored"
         onClick={onClaim}
         className="bg-[#22c55e] hover:bg-green-400 text-white font-bold px-2.5 py-1.5 rounded text-xs flex items-center gap-1 transition-colors shrink-0"
       >
         <ExternalLink size={10} />
         Claim
-      </button>
+      </a>
     </div>
   )
 }
@@ -278,13 +287,12 @@ export default function BlogPlatformWidget({
   if (hidden) return null
 
   function handleClaimClick(e: React.MouseEvent) {
-    e.preventDefault()
+    e.stopPropagation()
     fetch('/api/affiliate-click', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ adId, platformId: platform.id, blogId, blogSlug, position }),
     }).catch(() => {})
-    window.open(platform.affiliateUrl, '_blank', 'noopener,noreferrer,nofollow')
   }
 
   if (variant === 'MINI') {
