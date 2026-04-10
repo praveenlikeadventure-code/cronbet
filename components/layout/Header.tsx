@@ -5,10 +5,14 @@ import Link from 'next/link'
 import { Menu, X, Crown } from 'lucide-react'
 import LanguageSwitcher from '@/components/ui/LanguageSwitcher'
 import { useLanguage } from '@/app/providers'
+import { useGeo } from '@/hooks/useGeo'
+import { usePageGeoRules } from '@/hooks/usePageGeoRules'
 
 export default function Header() {
   const [menuOpen, setMenuOpen] = useState(false)
   const { t } = useLanguage()
+  const { geo } = useGeo()
+  const blockedPaths = usePageGeoRules(geo?.countryCode)
 
   const navLinks = [
     { href: '/', label: t.nav.home },
@@ -17,7 +21,7 @@ export default function Header() {
     { href: '/cricket-betting', label: 'Cricket' },
     { href: '/best-bonuses', label: t.nav.bestBonuses },
     { href: '/blog', label: t.nav.blog },
-  ]
+  ].filter((link) => !blockedPaths.has(link.href))
 
   return (
     <header className="sticky top-0 z-50 bg-[#0a0e1a]/95 backdrop-blur border-b border-yellow-400/20">

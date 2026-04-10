@@ -119,6 +119,17 @@ model AffiliateClick {
   createdAt  DateTime @default(now())
 }
 
+// Page-level geo visibility rules
+model PageGeoRule {
+  id               String   @id @default(cuid())
+  pagePath         String   @unique  // e.g. "/ipl-betting"
+  pageLabel        String            // e.g. "IPL Betting"
+  isRestricted     Boolean  @default(false)
+  allowedCountries String   @default("[]")  // JSON array of country codes; empty = global
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
+
 // Global popup settings (singleton)
 model PopupSettings {
   id                 String   @id @default("singleton")

@@ -4,7 +4,31 @@ import bcrypt from 'bcryptjs'
 const prisma = new PrismaClient()
 
 async function main() {
-  // FIRST LINE GUARD - Exit immediately if any data exists
+  // --- Page geo rules (always upsert — safe for existing databases too) ---
+  // update: {} means existing rules are never overwritten by seed
+  await prisma.pageGeoRule.upsert({
+    where: { pagePath: '/ipl-betting' },
+    update: {},
+    create: {
+      pagePath: '/ipl-betting',
+      pageLabel: 'IPL Betting',
+      isRestricted: true,
+      allowedCountries: JSON.stringify(['IN']),
+    },
+  })
+  await prisma.pageGeoRule.upsert({
+    where: { pagePath: '/cricket-betting' },
+    update: {},
+    create: {
+      pagePath: '/cricket-betting',
+      pageLabel: 'Cricket Betting',
+      isRestricted: true,
+      allowedCountries: JSON.stringify(['IN']),
+    },
+  })
+  console.log('✅ Page geo rules ensured.')
+
+  // FIRST LINE GUARD - Exit immediately if any platform/user data exists
   const count = await prisma.adminUser.count()
   if (count > 0) {
     console.log('DATA EXISTS - EXITING SEED IMMEDIATELY')

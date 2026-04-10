@@ -7,6 +7,7 @@ import { parsePlatforms } from '@/lib/types'
 import { getGeoOffersForPlatforms, applyGeoOffer } from '@/lib/geo-offers'
 import { Shield, Trophy, CheckCircle2 } from 'lucide-react'
 import GeoAwareSportsPlatforms from '@/components/GeoAwareSportsPlatforms'
+import GeoGuard from '@/components/GeoGuard'
 
 export const metadata: Metadata = {
   title: 'Best IPL Betting Sites 2026 - Top Apps for IPL Season',
@@ -79,18 +80,21 @@ const bettingTips = [
 ]
 
 export default async function IPLBettingPage() {
-  const rawPlatforms = await prisma.bettingPlatform.findMany({
-    where: { isActive: true },
-    orderBy: { rank: 'asc' },
-    take: 8,
-  })
+  const [rawPlatforms, geoRule] = await Promise.all([
+    prisma.bettingPlatform.findMany({ where: { isActive: true }, orderBy: { rank: 'asc' }, take: 8 }),
+    prisma.pageGeoRule.findUnique({ where: { pagePath: '/ipl-betting' } }),
+  ])
   const parsedPlatforms = parsePlatforms(rawPlatforms as Record<string, unknown>[])
 
   // SSR: DEFAULT geo — GeoAwareSportsPlatforms upgrades client-side after detection
   const geoOffers = await getGeoOffersForPlatforms(parsedPlatforms.map((p) => p.id), 'DEFAULT')
   const platforms = parsedPlatforms.map((p) => applyGeoOffer(p, geoOffers.get(p.id)))
 
+  const allowedCountries: string[] =
+    geoRule?.isRestricted ? JSON.parse(geoRule.allowedCountries || '[]') : []
+
   return (
+    <GeoGuard allowedCountries={allowedCountries}>
     <div className="min-h-screen">
       {/* Hero */}
       <section className="relative overflow-hidden bg-gradient-to-b from-[#0f1629] to-[#0a0e1a] py-20 px-4">
@@ -230,5 +234,6 @@ export default async function IPLBettingPage() {
         }}
       />
     </div>
+    </GeoGuard>
   )
 }

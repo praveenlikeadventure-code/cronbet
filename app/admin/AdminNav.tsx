@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { signOut, useSession } from 'next-auth/react'
-import { Crown, LayoutDashboard, Star, FileText, LogOut, Users, Settings, Megaphone } from 'lucide-react'
+import { Crown, LayoutDashboard, Star, FileText, LogOut, Users, Settings, Megaphone, Globe } from 'lucide-react'
 
 const ROLE_LABELS: Record<string, string> = {
   SUPER_ADMIN: 'Super Admin',
@@ -62,6 +62,11 @@ export default function AdminNav() {
             {canSeeTeam && (
               <Link href="/admin/users" className="flex items-center gap-1.5 text-sm text-gray-300 hover:text-yellow-400">
                 <Users size={15} /> Team
+              </Link>
+            )}
+            {canSeeSettings && (
+              <Link href="/admin/page-geo" className="flex items-center gap-1.5 text-sm text-gray-300 hover:text-yellow-400">
+                <Globe size={15} /> Page Visibility
               </Link>
             )}
             {canSeeSettings && (
