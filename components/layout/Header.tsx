@@ -13,6 +13,8 @@ export default function Header() {
   const navLinks = [
     { href: '/', label: t.nav.home },
     { href: '/compare', label: t.nav.compare },
+    { href: '/ipl-betting', label: 'IPL Betting' },
+    { href: '/cricket-betting', label: 'Cricket' },
     { href: '/best-bonuses', label: t.nav.bestBonuses },
     { href: '/blog', label: t.nav.blog },
   ]

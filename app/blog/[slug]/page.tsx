@@ -399,15 +399,33 @@ export default async function BlogPostPage({ params }: Props) {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
-          __html: JSON.stringify({
-            '@context': 'https://schema.org',
-            '@type': 'Article',
-            headline: post.title,
-            description: post.excerpt,
-            author: { '@type': 'Organization', name: 'CRONBET' },
-            publisher: { '@type': 'Organization', name: 'CRONBET' },
-            datePublished: post.publishedAt,
-          }),
+          __html: JSON.stringify([
+            {
+              '@context': 'https://schema.org',
+              '@type': 'Article',
+              headline: post.title,
+              description: post.excerpt,
+              author: { '@type': 'Organization', name: 'CronBets', url: 'https://www.cronbets.com' },
+              publisher: {
+                '@type': 'Organization',
+                name: 'CronBets',
+                url: 'https://www.cronbets.com',
+                logo: { '@type': 'ImageObject', url: 'https://www.cronbets.com/og-image.jpg' },
+              },
+              datePublished: post.publishedAt,
+              dateModified: post.updatedAt,
+              mainEntityOfPage: { '@type': 'WebPage', '@id': `https://www.cronbets.com/blog/${post.slug}` },
+            },
+            {
+              '@context': 'https://schema.org',
+              '@type': 'BreadcrumbList',
+              itemListElement: [
+                { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://www.cronbets.com' },
+                { '@type': 'ListItem', position: 2, name: 'Blog', item: 'https://www.cronbets.com/blog' },
+                { '@type': 'ListItem', position: 3, name: post.title, item: `https://www.cronbets.com/blog/${post.slug}` },
+              ],
+            },
+          ]),
         }}
       />
 

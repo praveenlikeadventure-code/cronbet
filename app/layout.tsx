@@ -10,24 +10,44 @@ import { type Locale, languages, SUPPORTED_LOCALES, DEFAULT_LOCALE, LOCALE_COOKI
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://www.cronbets.com'),
   title: {
-    default: 'CRONBET - Best Betting Sites Comparison 2024',
-    template: '%s | CRONBET',
+    default: 'CronBets - Best Betting Sites Comparison 2026',
+    template: '%s | CronBets',
   },
   description:
-    'Compare the best online betting sites. Expert reviews of 1xBet, Melbet, 22Bet, LeonBet, Mostbet, Bet365 and more. Find the best bonuses and odds.',
-  metadataBase: new URL('https://cronbet.com'),
+    'Compare the best betting sites in India 2026. Find top bonuses from 1xBet, Melbet, 22Bet and more. Expert reviews and exclusive welcome offers.',
+  keywords: [
+    'betting sites india',
+    'best betting apps',
+    '1xbet india',
+    'melbet bonus',
+    'cricket betting',
+    'ipl betting sites',
+    'online betting india 2026',
+  ],
   openGraph: {
     type: 'website',
-    siteName: 'CRONBET',
-    images: [{ url: '/og-image.png' }],
+    locale: 'en_IN',
+    url: 'https://www.cronbets.com',
+    siteName: 'CronBets',
+    images: [{ url: '/og-image.jpg', width: 1200, height: 630 }],
   },
   twitter: {
     card: 'summary_large_image',
+    site: '@cronbets',
   },
   robots: {
     index: true,
     follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-image-preview': 'large',
+    },
+  },
+  verification: {
+    google: 'PASTE_YOUR_GSC_CODE_HERE',
   },
 }
 

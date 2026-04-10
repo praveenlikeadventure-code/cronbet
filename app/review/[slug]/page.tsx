@@ -64,24 +64,51 @@ export default async function ReviewPage({ params }: Props) {
 
       <GeoAwareReview initialPlatform={platform} initialRelated={related} />
 
-      {/* JSON-LD Review Schema */}
+      {/* JSON-LD: Review + Product + BreadcrumbList */}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
-          __html: JSON.stringify({
-            '@context': 'https://schema.org',
-            '@type': 'Review',
-            name: `${platform.name} Review`,
-            reviewBody: platform.description,
-            reviewRating: {
-              '@type': 'Rating',
-              ratingValue: platform.rating,
-              bestRating: 5,
-              worstRating: 1,
+          __html: JSON.stringify([
+            {
+              '@context': 'https://schema.org',
+              '@type': 'Review',
+              name: `${platform.name} Review`,
+              reviewBody: platform.description,
+              reviewRating: {
+                '@type': 'Rating',
+                ratingValue: platform.rating,
+                bestRating: 5,
+                worstRating: 1,
+              },
+              author: { '@type': 'Organization', name: 'CronBets' },
+              itemReviewed: {
+                '@type': 'Product',
+                name: platform.name,
+                description: platform.description,
+                offers: {
+                  '@type': 'Offer',
+                  description: platform.bonusText,
+                  url: `https://www.cronbets.com/review/${platform.slug}`,
+                },
+                aggregateRating: {
+                  '@type': 'AggregateRating',
+                  ratingValue: platform.rating,
+                  bestRating: 5,
+                  worstRating: 1,
+                  reviewCount: 1,
+                },
+              },
             },
-            author: { '@type': 'Organization', name: 'CRONBET' },
-            itemReviewed: { '@type': 'Organization', name: platform.name },
-          }),
+            {
+              '@context': 'https://schema.org',
+              '@type': 'BreadcrumbList',
+              itemListElement: [
+                { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://www.cronbets.com' },
+                { '@type': 'ListItem', position: 2, name: 'Reviews', item: 'https://www.cronbets.com/compare' },
+                { '@type': 'ListItem', position: 3, name: platform.name, item: `https://www.cronbets.com/review/${platform.slug}` },
+              ],
+            },
+          ]),
         }}
       />
     </div>

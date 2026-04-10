@@ -11,9 +11,9 @@ import { type Locale, SUPPORTED_LOCALES, DEFAULT_LOCALE, LOCALE_COOKIE, getTrans
 import { getGeoOffersForPlatforms, applyGeoOffer } from '@/lib/geo-offers'
 
 export const metadata: Metadata = {
-  title: 'CRONBET - Best Betting Sites Comparison 2024',
+  title: 'CronBets - Best Betting Sites Comparison 2026',
   description:
-    'Compare the best online betting sites. Expert reviews of 1xBet, Melbet, 22Bet and more. Find the biggest bonuses and best odds for 2024.',
+    'Compare the best betting sites in India 2026. Expert reviews of 1xBet, Melbet, 22Bet and more. Find the biggest bonuses and best odds for IPL 2026.',
 }
 
 export default async function HomePage() {
@@ -151,16 +151,43 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* JSON-LD */}
+      {/* JSON-LD: WebSite + SearchAction */}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
           __html: JSON.stringify({
             '@context': 'https://schema.org',
             '@type': 'WebSite',
-            name: 'CRONBET',
-            url: 'https://cronbet.com',
-            description: 'Compare the best online betting sites',
+            name: 'CronBets',
+            url: 'https://www.cronbets.com',
+            description: 'Compare the best betting sites in India 2026',
+            potentialAction: {
+              '@type': 'SearchAction',
+              target: {
+                '@type': 'EntryPoint',
+                urlTemplate: 'https://www.cronbets.com/compare?q={search_term_string}',
+              },
+              'query-input': 'required name=search_term_string',
+            },
+          }),
+        }}
+      />
+      {/* JSON-LD: ItemList of top platforms */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            '@context': 'https://schema.org',
+            '@type': 'ItemList',
+            name: 'Top Betting Sites in India 2026',
+            description: 'Best rated online betting platforms for Indian users',
+            itemListElement: platforms.slice(0, 5).map((p, i) => ({
+              '@type': 'ListItem',
+              position: i + 1,
+              name: p.name,
+              url: `https://www.cronbets.com/review/${p.slug}`,
+              description: p.bonusText,
+            })),
           }),
         }}
       />
