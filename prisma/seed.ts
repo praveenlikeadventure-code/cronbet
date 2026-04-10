@@ -4,6 +4,13 @@ import bcrypt from 'bcryptjs'
 const prisma = new PrismaClient()
 
 async function main() {
+  // FIRST LINE GUARD - Exit immediately if any data exists
+  const count = await prisma.adminUser.count()
+  if (count > 0) {
+    console.log('DATA EXISTS - EXITING SEED IMMEDIATELY')
+    process.exit(0)
+  }
+
   // SAFETY CHECK - Never overwrite existing data
   const platformCount = await prisma.bettingPlatform.count()
   const adminCount = await prisma.adminUser.count()
@@ -15,7 +22,7 @@ async function main() {
     console.log(`Admins: ${adminCount}`)
     console.log(`Geo offers: ${geoCount}`)
     console.log('=== SEED SKIPPED SAFELY ===')
-    return // EXIT immediately - don't touch anything
+    process.exit(0)
   }
 
   console.log('Empty database - running initial seed...')
