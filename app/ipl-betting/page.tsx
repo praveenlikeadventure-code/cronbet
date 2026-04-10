@@ -80,18 +80,27 @@ const bettingTips = [
 ]
 
 export default async function IPLBettingPage() {
-  const [rawPlatforms, geoRule] = await Promise.all([
-    prisma.bettingPlatform.findMany({ where: { isActive: true }, orderBy: { rank: 'asc' }, take: 8 }),
-    prisma.pageGeoRule.findUnique({ where: { pagePath: '/ipl-betting' } }),
-  ])
+  const rawPlatforms = await prisma.bettingPlatform.findMany({
+    where: { isActive: true },
+    orderBy: { rank: 'asc' },
+    take: 8,
+  })
   const parsedPlatforms = parsePlatforms(rawPlatforms as Record<string, unknown>[])
 
   // SSR: DEFAULT geo — GeoAwareSportsPlatforms upgrades client-side after detection
   const geoOffers = await getGeoOffersForPlatforms(parsedPlatforms.map((p) => p.id), 'DEFAULT')
   const platforms = parsedPlatforms.map((p) => applyGeoOffer(p, geoOffers.get(p.id)))
 
-  const allowedCountries: string[] =
-    geoRule?.isRestricted ? JSON.parse(geoRule.allowedCountries || '[]') : []
+  // Defensive: PageGeoRule table may not exist yet on first deploy after schema change
+  let allowedCountries: string[] = []
+  try {
+    const geoRule = await (prisma as any).pageGeoRule?.findUnique({ where: { pagePath: '/ipl-betting' } })
+    if (geoRule?.isRestricted) {
+      allowedCountries = JSON.parse(geoRule.allowedCountries || '[]')
+    }
+  } catch {
+    // Table not yet migrated — show page to everyone
+  }
 
   return (
     <GeoGuard allowedCountries={allowedCountries}>
