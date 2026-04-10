@@ -5,7 +5,8 @@ import Link from 'next/link'
 import { prisma } from '@/lib/prisma'
 import { parsePlatforms } from '@/lib/types'
 import { getGeoOffersForPlatforms, applyGeoOffer } from '@/lib/geo-offers'
-import { Star, Trophy, Shield, CheckCircle2 } from 'lucide-react'
+import { Shield, Trophy, CheckCircle2 } from 'lucide-react'
+import GeoAwareSportsPlatforms from '@/components/GeoAwareSportsPlatforms'
 
 export const metadata: Metadata = {
   title: 'Best IPL Betting Sites 2026 - Top Apps for IPL Season',
@@ -44,8 +45,8 @@ const faqs = [
     a: 'Sign up through our links, make your first deposit, and the welcome bonus is credited automatically on most platforms. Check wagering requirements (typically 5-10x for sports) before withdrawing.',
   },
   {
-    q: 'Which payment methods work for IPL betting in India?',
-    a: 'UPI, Paytm, PhonePe, NetBanking, and cryptocurrency are widely accepted by top IPL betting platforms. Most process deposits instantly and withdrawals within 24 hours.',
+    q: 'Which payment methods work for IPL betting?',
+    a: 'UPI, Paytm, PhonePe, and NetBanking work well for Indian users. International users can use credit/debit cards, e-wallets (Skrill, Neteller), and cryptocurrency. Most platforms process deposits instantly.',
   },
   {
     q: 'Can I bet on IPL on mobile?',
@@ -53,19 +54,19 @@ const faqs = [
   },
   {
     q: 'What is the minimum deposit to start IPL betting?',
-    a: 'Most platforms accept deposits from ₹100-₹500. 1xBet minimum deposit is as low as ₹100, making it very accessible for Indian bettors.',
+    a: 'Most platforms accept small deposits — 1xBet minimum is as low as $1. Exact minimums vary by country and payment method.',
   },
   {
-    q: 'How do I withdraw IPL betting winnings in India?',
-    a: 'Withdrawals via UPI, bank transfer, or crypto are fastest. Most platforms process withdrawals within 24 hours. Verify your account (KYC) first to avoid delays.',
+    q: 'How do I withdraw IPL betting winnings?',
+    a: 'Withdrawals are processed to your preferred payment method — bank transfer, e-wallet, or crypto. Most platforms process withdrawals within 24 hours after KYC verification.',
   },
   {
     q: 'Which IPL betting site has the best odds?',
-    a: 'Bet365 and 1xBet consistently offer the best cricket odds with low margins. Compare odds across platforms before placing large bets to maximize returns.',
+    a: 'Bet365 and 1xBet consistently offer the best cricket odds with low margins. Compare odds across platforms before placing large bets to maximise returns.',
   },
   {
-    q: 'Are my winnings from IPL betting taxable in India?',
-    a: 'Yes, winnings from betting are taxable in India under "Income from other sources" at 30%. Consult a tax advisor for amounts exceeding the basic exemption limit.',
+    q: 'Are winnings from IPL betting taxable?',
+    a: 'Tax treatment of betting winnings varies by country. In India, winnings are taxable at 30% under "Income from other sources". Consult a local tax advisor for your specific situation.',
   },
 ]
 
@@ -81,9 +82,11 @@ export default async function IPLBettingPage() {
   const rawPlatforms = await prisma.bettingPlatform.findMany({
     where: { isActive: true },
     orderBy: { rank: 'asc' },
-    take: 5,
+    take: 8,
   })
   const parsedPlatforms = parsePlatforms(rawPlatforms as Record<string, unknown>[])
+
+  // SSR: DEFAULT geo — GeoAwareSportsPlatforms upgrades client-side after detection
   const geoOffers = await getGeoOffersForPlatforms(parsedPlatforms.map((p) => p.id), 'DEFAULT')
   const platforms = parsedPlatforms.map((p) => applyGeoOffer(p, geoOffers.get(p.id)))
 
@@ -101,7 +104,7 @@ export default async function IPLBettingPage() {
             Best <span className="text-yellow-400">IPL Betting</span> Sites 2026
           </h1>
           <p className="text-xl text-gray-300 mb-8 max-w-2xl mx-auto">
-            Top apps for IPL match betting with exclusive welcome bonuses, live in-play odds, and fast INR payouts.
+            Top apps for IPL match betting with exclusive welcome bonuses, live in-play odds, and fast local payouts.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link
@@ -120,46 +123,14 @@ export default async function IPLBettingPage() {
         </div>
       </section>
 
-      {/* Top 5 IPL Betting Platforms */}
-      <section className="max-w-4xl mx-auto px-4 py-16">
-        <h2 className="text-3xl font-extrabold text-white mb-2 text-center">
-          Top 5 IPL Betting Platforms
-        </h2>
-        <p className="text-gray-400 text-center mb-10">Ranked by cricket coverage, odds quality, and India-friendly features</p>
-
-        <div className="space-y-4">
-          {platforms.map((platform, i) => (
-            <div
-              key={platform.id}
-              className="bg-[#0f1629] border border-white/10 rounded-xl p-5 flex flex-col sm:flex-row items-start sm:items-center gap-4 hover:border-yellow-400/30 transition-colors"
-            >
-              <div className="flex items-center gap-4 flex-1 min-w-0">
-                <span className="text-2xl font-extrabold text-yellow-400 w-8 shrink-0">#{i + 1}</span>
-                {platform.logo && (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={platform.logo} alt={platform.name} className="w-12 h-12 rounded-lg object-contain bg-white/5 p-1" width={48} height={48} />
-                )}
-                <div className="min-w-0">
-                  <div className="font-bold text-white text-lg">{platform.name}</div>
-                  <div className="text-yellow-400 text-sm font-semibold">{platform.bonusText}</div>
-                  <div className="flex items-center gap-1 mt-1">
-                    {Array.from({ length: 5 }).map((_, j) => (
-                      <Star key={j} size={12} className={j < Math.floor(platform.rating) ? 'text-yellow-400 fill-yellow-400' : 'text-gray-600'} />
-                    ))}
-                    <span className="text-gray-400 text-xs ml-1">{platform.rating}/5</span>
-                  </div>
-                </div>
-              </div>
-              <Link
-                href={`/review/${platform.slug}`}
-                className="shrink-0 bg-yellow-400 hover:bg-yellow-300 text-black font-bold px-6 py-2.5 rounded-lg transition-colors text-sm"
-              >
-                Get Bonus
-              </Link>
-            </div>
-          ))}
-        </div>
-      </section>
+      {/* Geo-aware platform list + bonus cards */}
+      <GeoAwareSportsPlatforms
+        initialPlatforms={platforms}
+        listTitle="Top IPL Betting Platforms"
+        listSubtitleBase="Ranked by cricket coverage, live odds, and local payment options"
+        showBonusCards={true}
+        bonusSectionTitle="Best IPL Betting Bonuses"
+      />
 
       {/* How to Bet on IPL */}
       <section className="bg-[#0d1225] py-16 px-4">
@@ -169,10 +140,10 @@ export default async function IPLBettingPage() {
             {[
               { step: '1', title: 'Choose a platform', desc: 'Pick from our top-rated IPL betting sites above and click "Get Bonus".' },
               { step: '2', title: 'Register & verify', desc: 'Create your account. Most platforms require basic KYC for withdrawals.' },
-              { step: '3', title: 'Deposit via UPI', desc: 'Fund your account instantly using UPI, Paytm, or NetBanking.' },
+              { step: '3', title: 'Make a deposit', desc: 'Fund your account using your preferred local payment method.' },
               { step: '4', title: 'Navigate to Cricket', desc: 'Find the IPL section under Cricket > Tournaments > IPL 2026.' },
               { step: '5', title: 'Place your bet', desc: 'Select match winner, player performance, or live in-play markets.' },
-              { step: '6', title: 'Withdraw winnings', desc: 'Cash out to UPI or bank account — most platforms process in 24h.' },
+              { step: '6', title: 'Withdraw winnings', desc: 'Cash out to your preferred payment method — most platforms process in 24h.' },
             ].map(({ step, title, desc }) => (
               <div key={step} className="bg-[#0f1629] border border-white/10 rounded-xl p-5 flex gap-4">
                 <div className="w-9 h-9 rounded-full bg-yellow-400 text-black font-extrabold flex items-center justify-center shrink-0">
@@ -201,28 +172,6 @@ export default async function IPLBettingPage() {
               </div>
             </div>
           ))}
-        </div>
-      </section>
-
-      {/* IPL Bonuses */}
-      <section className="bg-[#0d1225] py-16 px-4">
-        <div className="max-w-4xl mx-auto">
-          <h2 className="text-3xl font-extrabold text-white mb-8 text-center">Best IPL Betting Bonuses</h2>
-          <div className="grid sm:grid-cols-3 gap-4">
-            {platforms.slice(0, 3).map((platform) => (
-              <div key={platform.id} className="bg-[#0f1629] border border-yellow-400/20 rounded-xl p-5 text-center">
-                <div className="font-bold text-white text-lg mb-2">{platform.name}</div>
-                <div className="text-yellow-400 font-extrabold text-xl mb-3">{platform.bonusText}</div>
-                <Link
-                  href={`/review/${platform.slug}`}
-                  className="block bg-yellow-400 hover:bg-yellow-300 text-black font-bold px-4 py-2 rounded-lg transition-colors text-sm"
-                >
-                  Claim Bonus
-                </Link>
-              </div>
-            ))}
-          </div>
-          <p className="text-gray-500 text-xs text-center mt-6">18+. T&amp;Cs apply. Gamble responsibly.</p>
         </div>
       </section>
 
