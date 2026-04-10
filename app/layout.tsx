@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import { cookies } from 'next/headers'
+import Script from 'next/script'
 import './globals.css'
 import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
@@ -59,6 +60,20 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 
   return (
     <html lang={locale} dir={dir}>
+      <head>
+        <Script
+          src="https://www.googletagmanager.com/gtag/js?id=G-D6T9GH87H4"
+          strategy="afterInteractive"
+        />
+        <Script id="gtag-init" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-D6T9GH87H4');
+          `}
+        </Script>
+      </head>
       <body className={`${inter.className} bg-[#0a0e1a] text-white antialiased`}>
         <Providers initialLocale={locale}>
           <Header />
