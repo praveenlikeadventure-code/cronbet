@@ -2,7 +2,7 @@
 
 import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import { PlusCircle, X, Globe, Target, Ban, Upload, Sparkles, Image } from 'lucide-react'
+import { PlusCircle, X, Globe, Target, Ban, Upload, Sparkles, Image as ImageIcon } from 'lucide-react'
 import { BettingPlatform, VisibilityType } from '@/lib/types'
 import { ALL_COUNTRIES_LIST } from '@/lib/geo-data'
 
@@ -229,7 +229,7 @@ export default function PlatformForm({ platform, isEdit = false }: PlatformFormP
 
               {!form.logo && (
                 <div className="flex items-center justify-center w-16 h-16 rounded-lg bg-white/5 border border-dashed border-white/20">
-                  <Image size={22} className="text-gray-600" />
+                  <ImageIcon size={22} className="text-gray-600" />
                 </div>
               )}
 

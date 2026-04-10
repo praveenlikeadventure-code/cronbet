@@ -282,7 +282,7 @@ export default function BlogPlatformWidget({
         }))
       })
     })
-  }, [initialPlatform.id])
+  }, [initialPlatform])
 
   if (hidden) return null
 

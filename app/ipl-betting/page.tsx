@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { prisma } from '@/lib/prisma'
 import { parsePlatforms } from '@/lib/types'
 import { getGeoOffersForPlatforms, applyGeoOffer } from '@/lib/geo-offers'
-import { Star, Trophy, Shield, Zap, CheckCircle2 } from 'lucide-react'
+import { Star, Trophy, Shield, CheckCircle2 } from 'lucide-react'
 
 export const metadata: Metadata = {
   title: 'Best IPL Betting Sites 2026 - Top Apps for IPL Season',
