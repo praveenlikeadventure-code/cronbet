@@ -19,7 +19,7 @@ async function main() {
     process.exit(0)
   }
 
-  console.log('=== Empty database — running initial seed === SEED CHECK v4 ===')
+  console.log('=== Empty database — running initial seed === SEED CHECK v7 ===')
 
   // ─── Page geo rules ────────────────────────────────────────────────────────
   // upsert with update:{} so re-runs never overwrite admin changes
