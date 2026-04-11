@@ -26,7 +26,7 @@ async function main() {
       allowedCountries: JSON.stringify(['IN']),
     },
   })
-  console.log('✅ Page geo rules ensured.')
+  console.log('✅ Page geo rules ensured. === SEED CHECK v2 ===')
 
   // FIRST LINE GUARD - Exit immediately if any platform/user data exists
   const count = await prisma.adminUser.count()
