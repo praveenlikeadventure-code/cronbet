@@ -4,8 +4,25 @@ import bcrypt from 'bcryptjs'
 const prisma = new PrismaClient()
 
 async function main() {
-  // --- Page geo rules (always upsert — safe for existing databases too) ---
-  // update: {} means existing rules are never overwritten by seed
+  // ─── GUARD: Exit immediately if ANY real data exists ──────────────────────
+  // Checks three independent tables so the guard fires even if one is empty.
+  const [adminCount, platformCount, geoCount] = await Promise.all([
+    prisma.adminUser.count(),
+    prisma.bettingPlatform.count(),
+    prisma.platformGeoOffer.count(),
+  ])
+
+  if (adminCount > 0 || platformCount > 0 || geoCount > 0) {
+    console.log('=== SEED SKIPPED: existing data detected ===')
+    console.log(`  adminUsers: ${adminCount}  platforms: ${platformCount}  geoOffers: ${geoCount}`)
+    await prisma.$disconnect()
+    process.exit(0)
+  }
+
+  console.log('=== Empty database — running initial seed === SEED CHECK v2 ===')
+
+  // ─── Page geo rules ────────────────────────────────────────────────────────
+  // upsert with update:{} so re-runs never overwrite admin changes
   await prisma.pageGeoRule.upsert({
     where: { pagePath: '/ipl-betting' },
     update: {},
@@ -26,53 +43,23 @@ async function main() {
       allowedCountries: JSON.stringify(['IN']),
     },
   })
-  console.log('✅ Page geo rules ensured. === SEED CHECK v2 ===')
+  console.log('✅ Page geo rules ensured.')
 
-  // FIRST LINE GUARD - Exit immediately if any platform/user data exists
-  const count = await prisma.adminUser.count()
-  if (count > 0) {
-    console.log('DATA EXISTS - EXITING SEED IMMEDIATELY')
-    process.exit(0)
-  }
+  // ─── Admin user ────────────────────────────────────────────────────────────
+  const passwordHash = await bcrypt.hash('Admin@123', 12)
+  await prisma.adminUser.upsert({
+    where: { email: 'admin@cronbet.com' },
+    update: {},
+    create: {
+      email: 'admin@cronbet.com',
+      name: 'Super Admin',
+      passwordHash,
+      role: 'SUPER_ADMIN',
+    },
+  })
+  console.log('✅ Default admin user created.')
 
-  // SAFETY CHECK - Never overwrite existing data
-  const platformCount = await prisma.bettingPlatform.count()
-  const adminCount = await prisma.adminUser.count()
-  const geoCount = await prisma.platformGeoOffer.count()
-
-  if (platformCount > 0 || adminCount > 0 || geoCount > 0) {
-    console.log('=== DATABASE HAS EXISTING DATA - SKIPPING SEED ===')
-    console.log(`Platforms: ${platformCount}`)
-    console.log(`Admins: ${adminCount}`)
-    console.log(`Geo offers: ${geoCount}`)
-    console.log('=== SEED SKIPPED SAFELY ===')
-    process.exit(0)
-  }
-
-  console.log('Empty database - running initial seed...')
-
-  // --- Admin users ---
-  if (adminCount > 0) {
-    console.log(`⏭️  Skipping admin seed — ${adminCount} user(s) already exist.`)
-  } else {
-    const passwordHash = await bcrypt.hash('Admin@123', 12)
-    await prisma.adminUser.upsert({
-      where: { email: 'admin@cronbet.com' },
-      update: {}, // never overwrite
-      create: {
-        email: 'admin@cronbet.com',
-        name: 'Super Admin',
-        passwordHash,
-        role: 'SUPER_ADMIN',
-      },
-    })
-    console.log('✅ Default admin user created.')
-  }
-
-  // --- Platforms ---
-  console.log('🌱 No platforms found — seeding platforms and sample content...')
-
-  // Seed betting platforms
+  // ─── Betting platforms ─────────────────────────────────────────────────────
   const platforms = [
     {
       name: '1xBet',
@@ -248,15 +235,15 @@ async function main() {
     }
     await prisma.bettingPlatform.upsert({
       where: { slug: platform.slug },
-      update: {}, // never overwrite existing platform data
+      update: {},
       create: data,
     })
   }
 
-  // Seed sample blog posts
+  // ─── Sample blog post ──────────────────────────────────────────────────────
   await prisma.blogPost.upsert({
     where: { slug: 'best-betting-sites-2024' },
-    update: {}, // never overwrite existing blog posts
+    update: {},
     create: {
       title: 'Best Betting Sites in 2024: Our Top Picks',
       slug: 'best-betting-sites-2024',
