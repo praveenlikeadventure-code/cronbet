@@ -65,8 +65,14 @@ export default async function CricketBettingPage() {
   const parsedPlatforms = parsePlatforms(rawPlatforms as Record<string, unknown>[])
 
   // SSR: DEFAULT geo — GeoAwareSportsPlatforms upgrades client-side after detection
-  const geoOffers = await getGeoOffersForPlatforms(parsedPlatforms.map((p) => p.id), 'DEFAULT')
-  const platforms = parsedPlatforms.map((p) => applyGeoOffer(p, geoOffers.get(p.id)))
+  // Defensive: PlatformGeoOffer table may not exist yet on first deploy after schema change
+  let platforms = parsedPlatforms
+  try {
+    const geoOffers = await getGeoOffersForPlatforms(parsedPlatforms.map((p) => p.id), 'DEFAULT')
+    platforms = parsedPlatforms.map((p) => applyGeoOffer(p, geoOffers.get(p.id)))
+  } catch {
+    // Table not yet migrated — use platforms without geo offer overrides
+  }
 
   // Defensive: PageGeoRule table may not exist yet on first deploy after schema change
   let allowedCountries: string[] = []
