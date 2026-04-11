@@ -100,7 +100,7 @@ export default async function IPLBettingPage() {
   // Defensive: PageGeoRule table may not exist yet on first deploy after schema change
   let allowedCountries: string[] = []
   try {
-    const geoRule = await (prisma as unknown as typeof prisma).pageGeoRule.findUnique({ where: { pagePath: '/ipl-betting' } })
+    const geoRule = await prisma.pageGeoRule.findUnique({ where: { pagePath: '/ipl-betting' } })
     if (geoRule?.isRestricted) {
       allowedCountries = JSON.parse(geoRule.allowedCountries || '[]')
     }
