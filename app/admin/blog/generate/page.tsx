@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { useSession } from 'next-auth/react'
 import AdminNav from '../../AdminNav'
 import { Sparkles, ChevronDown, RefreshCw, Send, BookOpen, Clock, Megaphone, PlusCircle, CheckCircle } from 'lucide-react'
 
@@ -67,6 +68,7 @@ function SeoBar({ label, pass }: { label: string; pass: boolean }) {
 }
 
 export default function GenerateBlogPage() {
+  const { status } = useSession({ required: true })
   const router = useRouter()
   const [platforms, setPlatforms] = useState<Platform[]>([])
 
@@ -188,6 +190,8 @@ export default function GenerateBlogPage() {
   } : null
 
   const seoScore = seoChecks ? Object.values(seoChecks).filter(Boolean).length : 0
+
+  if (status === 'loading') return null
 
   return (
     <div className="min-h-screen bg-[#060910]">

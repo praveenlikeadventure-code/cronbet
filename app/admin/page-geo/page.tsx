@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useSession } from 'next-auth/react'
 import AdminNav from '../AdminNav'
 import { Globe, Plus, Save, Trash2, CheckCircle, AlertCircle, X } from 'lucide-react'
 import { ALL_COUNTRIES_LIST } from '@/lib/geo-data'
@@ -29,6 +30,7 @@ const PREDEFINED_PAGES = [
 ]
 
 export default function PageGeoPage() {
+  const { status } = useSession({ required: true })
   const [rules, setRules] = useState<PageGeoRule[]>([])
   const [loading, setLoading] = useState(true)
   const [editing, setEditing] = useState<EditState | null>(null)
@@ -142,6 +144,8 @@ export default function PageGeoPage() {
   const unconfiguredPages = PREDEFINED_PAGES.filter(
     (p) => !rules.find((r) => r.pagePath === p.path),
   )
+
+  if (status === 'loading') return null
 
   return (
     <div className="min-h-screen bg-[#060910]">

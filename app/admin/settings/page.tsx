@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useSession } from 'next-auth/react'
 import AdminNav from '../AdminNav'
 import { Settings, Zap, Clock, RotateCcw, Save, CheckCircle, Users, Megaphone } from 'lucide-react'
 import Link from 'next/link'
@@ -25,6 +26,7 @@ const ROTATION_TOPICS = [
 ]
 
 export default function AdminSettingsPage() {
+  const { status } = useSession({ required: true })
   const [settings, setSettings] = useState<AutoBlogSettings>({
     enabled: false,
     publishTime: '09:00',
@@ -65,6 +67,8 @@ export default function AdminSettingsPage() {
       setSaving(false)
     }
   }
+
+  if (status === 'loading') return null
 
   const nextTopic = ROTATION_TOPICS[(settings.topicIndex ?? 0) % ROTATION_TOPICS.length]
 

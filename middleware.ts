@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { getToken } from 'next-auth/jwt'
 import {
   type Locale,
   SUPPORTED_LOCALES,
@@ -8,15 +9,27 @@ import {
   localeFromAcceptLanguage,
 } from '@/lib/i18n'
 
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   // Skip middleware for non-page routes
   const { pathname } = request.nextUrl
   if (
     pathname.startsWith('/_next') ||
     pathname.startsWith('/api') ||
-    pathname.startsWith('/admin') ||
     pathname.match(/\.(ico|png|jpg|jpeg|svg|webp|woff2?|ttf|css|js)$/)
   ) {
+    return NextResponse.next()
+  }
+
+  // Guard all admin routes — only /admin/login is publicly accessible
+  if (pathname.startsWith('/admin')) {
+    if (pathname === '/admin/login') {
+      return NextResponse.next()
+    }
+    const token = await getToken({ req: request })
+    if (!token) {
+      const loginUrl = new URL('/admin/login', request.url)
+      return NextResponse.redirect(loginUrl)
+    }
     return NextResponse.next()
   }
 

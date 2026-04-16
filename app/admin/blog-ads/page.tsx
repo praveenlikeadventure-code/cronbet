@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import { useSession } from 'next-auth/react'
 import AdminNav from '../AdminNav'
 import Image from 'next/image'
 import {
@@ -84,6 +85,7 @@ const defaultForm = {
 }
 
 export default function BlogAdsPage() {
+  const { status } = useSession({ required: true })
   const [ads, setAds] = useState<BlogAd[]>([])
   const [platforms, setPlatforms] = useState<Platform[]>([])
   const [loading, setLoading] = useState(true)
@@ -263,6 +265,8 @@ export default function BlogAdsPage() {
     IN_CONTENT: 'In-Content',
     ALL: 'All Positions',
   }
+
+  if (status === 'loading') return null
 
   return (
     <div className="min-h-screen bg-[#060910]">
